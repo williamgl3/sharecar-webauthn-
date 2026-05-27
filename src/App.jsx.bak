@@ -1,0 +1,756 @@
+import React, { useState, useEffect } from 'react';
+import { LogOut, Home, Plus, Search } from 'lucide-react';
+import BiometricAuthForm from './components/BiometricAuthForm';
+import PasswordAuthForm from './components/PasswordAuthForm';
+import StellarWallet from './components/StellarWallet';
+import PublishForm from './PublishForm';
+
+const API_URL = 'http://localhost:4000';
+
+function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [view, setView] = useState('dashboard');
+  const [activeDialog, setActiveDialog] = useState(null);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('info');
+  const [vehicles, setVehicles] = useState([]);
+  const [createUsername, setCreateUsername] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const runBiometricFlow = async (usernameValue) => {
+    if (!window.navigator?.credentials) {
+      setMessage("El navegador no soporta WebAuthn");
+      return;
+    }
+
+    const safeUsername = usernameValue.trim();
+    if (!safeUsername) {
+      setMessage("Escribe un usuario antes de usar la huella");
+      return;
+    }
+
+    const authOptionsResponse = await fetch(`${API_URL}/auth/options`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: safeUsername }),
+    });
+
+    if (authOptionsResponse.ok) {
+      const options = await authOptionsResponse.json();
+      const publicKey = {
+        ...options,
+        challenge: base64urlToBytes(options.challenge),
+        allowCredentials: (options.allowCredentials || []).map((credential) => ({
+          ...credential,
+          id: base64urlToBytes(credential.id),
+        })),
+      };
+
+      const assertion = await navigator.credentials.get({ publicKey });
+      const authPayload = {
+        id: assertion.id,
+        rawId: bytesToBase64url(assertion.rawId),
+        type: assertion.type,
+        response: {
+          clientDataJSON: bytesToBase64url(assertion.response.clientDataJSON),
+          authenticatorData: bytesToBase64url(assertion.response.authenticatorData),
+          signature: bytesToBase64url(assertion.response.signature),
+          userHandle: assertion.response.userHandle ? bytesToBase64url(assertion.response.userHandle) : null,
+        },
+      };
+
+      const verifyResponse = await fetch(`${API_URL}/auth/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: safeUsername,
+          assertion: authPayload,
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+      if (!verifyResponse.ok || !verifyData.ok) {
+        throw new Error(verifyData.error || "No se pudo validar la huella");
+      }
+
+      const uobj = { username: safeUsername };
+      finishLogin(uobj, '✅ Autenticación biométrica realizada');
+      setBiometricUsername('');
+      return;
+    }
+
+    const registerOptionsResponse = await fetch(`${API_URL}/register/options`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: safeUsername }),
+    });
+
+    const optionsData = await registerOptionsResponse.json();
+    if (!registerOptionsResponse.ok) {
+      throw new Error(optionsData.error || "No se pudieron obtener opciones de registro");
+    }
+
+    const publicKey = {
+      ...optionsData,
+      challenge: base64urlToBytes(optionsData.challenge),
+      user: {
+        ...optionsData.user,
+        id: base64urlToBytes(optionsData.user.id),
+      },
+      excludeCredentials: (optionsData.excludeCredentials || []).map((credential) => ({
+        ...credential,
+        id: base64urlToBytes(credential.id),
+      })),
+    };
+
+    const credential = await navigator.credentials.create({ publicKey });
+    const attestationPayload = {
+      id: credential.id,
+      rawId: bytesToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        clientDataJSON: bytesToBase64url(credential.response.clientDataJSON),
+        attestationObject: bytesToBase64url(credential.response.attestationObject),
+      },
+    };
+
+    const verifyResponse = await fetch(`${API_URL}/register/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: safeUsername,
+        attestation: attestationPayload,
+      }),
+    });
+
+    const verifyData = await verifyResponse.json();
+    if (!verifyResponse.ok || !verifyData.ok) {
+      throw new Error(verifyData.error || "No se pudo registrar la huella");
+    }
+
+    const uobj = { username: safeUsername };
+    finishLogin(uobj, '✅ Biometría registrada correctamente (huella/rostro)');
+  };
+
+  const handleCreateUserClick = async () => {
+    // Validación: campos no vacíos y formato
+    const usernameVal = createUsername.trim();
+    if (!usernameVal) {
+      setMessage("❌ Por favor escribe un usuario");
+      return;
+    }
+    // Solo letras (incluye ñ y acentos)
+    if (!/^[A-Za-zÀ-ÖØ-öø-ÿÑñ\s]+$/.test(usernameVal)) {
+      setMessage("❌ El usuario solo puede contener letras");
+      return;
+    }
+
+    if (!createPassword) {
+      setMessage("❌ Por favor escribe una contraseña");
+      return;
+    }
+    // Contraseña: al menos 6 chars, debe incluir letra, número y símbolo
+    if (createPassword.length < 6 || !/[A-Za-z]/.test(createPassword) || !/[0-9]/.test(createPassword) || !/[^A-Za-z0-9]/.test(createPassword)) {
+      setMessage("❌ La contraseña debe tener mínimo 6 caracteres e incluir letras, números y símbolos");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_URL}/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: createUsername.trim(),
+          password: createPassword,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudo crear el usuario");
+      }
+
+      const createdUsername = usernameVal;
+      if (createWithBiometric) {
+        if (createBiometricType === 'face') {
+          // Abrir modal de captura de rostro
+          setCaptureFaceUsername(createdUsername);
+          setActiveDialog('captureFace');
+          setMessage('🔔 Usuario creado. Abriendo cámara para capturar rostro...');
+        } else {
+          setMessage("✅ Usuario creado. Registrando passkey...");
+          setBiometricUsername(createdUsername);
+          await runBiometricFlow(createdUsername);
+        }
+      } else {
+        setMessage("✅ Usuario creado correctamente. Ya puedes iniciar sesión.");
+        setTimeout(() => setActiveDialog(null), 500);
+      }
+
+      setCreateUsername("");
+      setCreatePassword("");
+      setCreateWithBiometric(false);
+      setCreateBiometricType('passkey');
+    } catch (error) {
+      console.error("Error creando usuario:", error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUserLogin = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: loginUsername.trim(),
+          password: loginPassword,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudo iniciar sesión");
+      }
+
+      finishLogin(data.user, `✅ Sesión iniciada como ${data.user.username}`);
+      setLoginUsername("");
+      setLoginPassword("");
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ Error en inicio de sesión: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try { localStorage.removeItem('currentUser'); } catch (e) {}
+    setView('dashboard');
+    setMessage('Has cerrado sesión');
+  };
+
+  const registerOrLoginWithBiometrics = async () => {
+    setBusy(true);
+    try {
+      await runBiometricFlow(biometricUsername);
+    } catch (error) {
+      console.error(error);
+      setMessage(`❌ Error con la huella: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Cámara / Rostro
+  useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      try {
+        videoRef.current.srcObject = cameraStream;
+      } catch (e) {
+        videoRef.current.src = window.URL.createObjectURL(cameraStream);
+      }
+    }
+    return () => {};
+  }, [cameraStream]);
+
+  useEffect(() => {
+    if (activeDialog === 'captureFace') {
+      // intento de iniciar cámara automáticamente
+      startCamera().catch(() => {});
+    } else {
+      // cerrar cámara si modal se cierra
+      stopCamera();
+    }
+  }, [activeDialog]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      setCameraStream(stream);
+      return stream;
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ No se pudo acceder a la cámara');
+      throw err;
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const takePhotoAndUpload = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    // upload
+    if (captureFaceUsername) {
+      await uploadFacePhoto(captureFaceUsername, dataUrl);
+    }
+    stopCamera();
+    setCaptureFaceUsername(null);
+    setActiveDialog(null);
+  };
+
+  const uploadFacePhoto = async (username, dataUrl) => {
+    try {
+      const resp = await fetch(`${API_URL}/users/photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, image: dataUrl }),
+      });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || 'upload failed');
+      const uobj = { username };
+      finishLogin(uobj, '✅ Foto de rostro subida correctamente');
+    } catch (err) {
+      console.error(err);
+      setMessage(`❌ Error subiendo foto: ${err.message}`);
+    }
+  };
+
+  const handleQrLogin = () => {
+    setMessage(`Iniciando con QR: ${qr || "(vacío)"}`);
+  };
+
+  // Vehículos
+  const [vehicles, setVehicles] = useState([]);
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'search' | 'publish'
+
+  const finishLogin = (user, successMessage) => {
+    setCurrentUser(user);
+    try { localStorage.setItem('currentUser', JSON.stringify(user)); } catch (e) {}
+    setView(postLoginView);
+    setMessage(successMessage);
+    setActiveDialog(null);
+  };
+
+  // Cargar sesión desde localStorage al montar
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('currentUser');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.username) {
+          setCurrentUser(parsed);
+          setView(postLoginView);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const loadVehicles = async () => {
+    try {
+      const res = await fetch(`${API_URL}/vehicles`);
+      const j = await res.json();
+      if (res.ok && j.ok) setVehicles(j.vehicles || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) loadVehicles();
+  }, [currentUser]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-purple-900 text-white p-6">
+      <div className="max-w-5xl mx-auto w-full grid grid-cols-1 gap-8">
+        {/* Si hay usuario, mostrar nav */}
+        {currentUser ? (
+          <header className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">🔑</div>
+              <div className="text-xl font-extrabold">ShareCar</div>
+            </div>
+            <nav className="flex items-center gap-3">
+              <button onClick={() => setView('search')} className={`px-4 py-2 rounded ${view==='search'?'bg-indigo-600':'bg-gray-800'}`}>Rentar vehículo</button>
+              <button onClick={() => setView('publish')} className={`px-4 py-2 rounded ${view==='publish'?'bg-purple-600':'bg-gray-800'}`}>Publicar auto</button>
+              <div className="ml-4 text-sm text-gray-300">{currentUser.username}</div>
+              <button onClick={handleLogout} className="ml-4 px-3 py-2 bg-gray-700 rounded">Cerrar sesión</button>
+            </nav>
+          </header>
+        ) : (
+          <header className="text-center">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="text-4xl">🔑</div>
+              <div className="text-2xl font-extrabold">ShareCar</div>
+            </div>
+            <h1 className="text-5xl font-extrabold">Iniciar sesión</h1>
+            <p className="text-gray-300 mt-2">Elige tu método de acceso</p>
+          </header>
+        )}
+
+        <main>
+          {!currentUser ? (
+            <div className="bg-gradient-to-b from-gray-800/80 to-gray-800/60 p-8 rounded-2xl shadow-2xl border border-gray-700/80 max-w-3xl mx-auto">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-4">
+                  <button
+                    onClick={() => {
+                      setLoginUsername("");
+                      setLoginPassword("");
+                      setTimeout(() => setActiveDialog("login"), 50);
+                    }}
+                    disabled={busy}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-3 rounded-lg"
+                  >
+                    Iniciar con Usuario
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setBiometricUsername("");
+                      setActiveDialog("biometric");
+                    }}
+                    disabled={busy}
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:opacity-60 text-black font-bold py-3 rounded-lg"
+                  >
+                    Iniciar con Biometría
+                  </button>
+                </div>
+
+                <div className="relative flex items-center my-2">
+                  <div className="h-px bg-gray-700 flex-1" />
+                  <div className="px-3 text-sm text-gray-500">O usa tu código QR</div>
+                  <div className="h-px bg-gray-700 flex-1" />
+                </div>
+
+                <div>
+                  <label className="block text-left text-sm text-gray-400 mb-2">Código QR</label>
+                  <input
+                    value={qr}
+                    onChange={(e) => setQr(e.target.value)}
+                    placeholder="Pega tu código QR aquí"
+                    className="w-full bg-gray-700/60 border border-gray-700 rounded-lg px-4 py-3 placeholder-gray-400 outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleQrLogin}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg"
+                >
+                  Iniciar con QR
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCreateUsername("");
+                    setCreatePassword("");
+                    setCreateWithBiometric(false);
+                    setActiveDialog("create");
+                  }}
+                  className="w-full rounded-lg bg-cyan-400 px-4 py-3 font-bold text-black"
+                >
+                  Crear Usuario
+                </button>
+
+                <p className="text-xs text-gray-400 mt-3">🔒 Tres formas de acceso: Usuario, Huella o QR</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {view === 'dashboard' && (
+                <section className="bg-gray-800/60 p-6 rounded-2xl shadow-inner border border-gray-700/50">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-extrabold">Bienvenido, {currentUser.username}</h2>
+                      <p className="text-sm text-gray-300 mt-1">Ya iniciaste sesión. Elige qué quieres hacer.</p>
+                    </div>
+                    <div className="flex flex-col gap-3 md:flex-row">
+                      <button onClick={() => setView('search')} className="px-5 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 font-semibold text-white">
+                        Rentar vehículo
+                      </button>
+                      <button onClick={() => setView('publish')} className="px-5 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 font-semibold text-white">
+                        Agregar auto
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {view === 'search' && (
+                <section className="bg-gray-800/60 p-6 rounded-2xl shadow-inner border border-gray-700/50">
+                  <h2 className="text-lg font-semibold mb-3">Rentar Vehículos Disponibles</h2>
+                  <div className="space-y-4">
+                    {vehicles.length === 0 ? (
+                      <div className="text-gray-400">No hay vehículos publicados aún.</div>
+                    ) : (
+                      vehicles.map((v) => (
+                        <div key={v.id} className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold">{v.make} — {v.model}</div>
+                              <div className="text-sm text-gray-400">Propietario: {v.owner}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold">{v.currency} {v.pricePerHour}</div>
+                              <div className="text-xs text-gray-500">/hora</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {view === 'publish' && (
+                <section className="bg-gray-800/60 p-6 rounded-2xl shadow-inner border border-gray-700/50">
+                  <h2 className="text-lg font-semibold mb-3">Publicar Vehículo</h2>
+                  <PublishForm owner={currentUser?.username} onPublished={() => { loadVehicles(); setView('search'); }} />
+                </section>
+              )}
+            </div>
+          )}
+        </main>
+
+        <section className="bg-gray-800/60 p-6 rounded-2xl shadow-inner border border-gray-700/50">
+          <h2 className="text-lg font-semibold mb-3">¿Qué puedes hacer en ShareCar?</h2>
+          <ul className="text-gray-300 space-y-2">
+            <li>• Publicar tu vehículo con tarifas y disponibilidad</li>
+            <li>• Buscar y reservar autos por hora o día</li>
+            <li>• Pagos seguros con tecnología blockchain</li>
+            <li>• Sistema de reseñas y verificación de usuarios</li>
+          </ul>
+        </section>
+
+        <div className="text-center text-sm text-green-300 mt-2">{message}</div>
+      </div>
+
+      {activeDialog === "login" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-2">Iniciar con usuario</h3>
+            <p className="text-sm text-gray-400 mb-6">Ingresa usuario y contraseña para iniciar sesión.</p>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleUserLogin();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Usuario</label>
+                <input
+                  autoComplete="off"
+                  name="login-username"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  placeholder="Escribe tu usuario"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Contraseña</label>
+                <input
+                  autoComplete="new-password"
+                  name="login-password"
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Escribe tu contraseña"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white disabled:opacity-60"
+                >
+                  Iniciar sesión
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveDialog(null)}
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-semibold text-white"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {activeDialog === 'captureFace' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-2">Capturar rostro</h3>
+            <p className="text-sm text-gray-400 mb-4">Permite el acceso a la cámara y toma una foto para registrar tu rostro.</p>
+
+            <div className="space-y-4">
+              <div className="w-full bg-black rounded-lg overflow-hidden">
+                <video ref={videoRef} autoPlay playsInline className="w-full h-64 object-cover bg-black" />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={async () => { if (!cameraStream) await startCamera(); }}
+                  className="flex-1 rounded-lg bg-green-600 px-4 py-3 font-bold text-white"
+                >
+                  Abrir cámara
+                </button>
+                <button
+                  type="button"
+                  onClick={takePhotoAndUpload}
+                  className="flex-1 rounded-lg bg-cyan-400 px-4 py-3 font-bold text-black"
+                >
+                  Tomar foto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { stopCamera(); setActiveDialog(null); setCaptureFaceUsername(null); }}
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-semibold text-white"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeDialog === "biometric" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-2">Huella dactilar</h3>
+            <p className="text-sm text-gray-400 mb-6">Escribe tu usuario para registrar o iniciar con la huella.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Usuario</label>
+                <input
+                  value={biometricUsername}
+                  onChange={(e) => setBiometricUsername(e.target.value)}
+                  placeholder="Escribe tu usuario"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={registerOrLoginWithBiometrics}
+                  disabled={busy}
+                  className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black disabled:opacity-60"
+                >
+                  Usar huella
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveDialog(null)}
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-semibold text-white"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeDialog === "create" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-2">Crear usuario</h3>
+            <p className="text-sm text-gray-400 mb-6">Escribe un usuario y una contraseña (mín. 6 caracteres).</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">👤 Usuario</label>
+                <input
+                  autoFocus
+                  value={createUsername}
+                  onChange={(e) => setCreateUsername(e.target.value)}
+                  placeholder="ejemplo: juanperez"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 outline-none focus:border-cyan-400 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">🔐 Contraseña</label>
+                <input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  placeholder="mínimo 6 caracteres"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 outline-none focus:border-cyan-400 transition"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={createWithBiometric}
+                  onChange={(e) => setCreateWithBiometric(e.target.checked)}
+                />
+                Registrar biometría ahora
+              </label>
+
+              {createWithBiometric && (
+                <div className="mt-2 space-y-2 text-sm">
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2">
+                      <input type="radio" name="btype" value="passkey" checked={createBiometricType==='passkey'} onChange={() => setCreateBiometricType('passkey')} />
+                      Usar passkey (huella/FaceID del dispositivo)
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2">
+                      <input type="radio" name="btype" value="face" checked={createBiometricType==='face'} onChange={() => setCreateBiometricType('face')} />
+                      Capturar foto (abrir cámara)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCreateUserClick}
+                  disabled={busy}
+                  className="flex-1 rounded-lg bg-cyan-400 px-4 py-3 font-bold text-black disabled:opacity-60 hover:bg-cyan-500 transition"
+                >
+                  {busy ? "⏳ Creando..." : "✅ Crear usuario"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveDialog(null)}
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-semibold text-white hover:bg-gray-600 transition"
+                >
+                  ✕ Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+export default App;

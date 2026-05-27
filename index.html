@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="ShareCar - Comparte vehículos eléctricos de forma segura con autenticación biométrica y blockchain Stellar" />
+    <meta name="keywords" content="vehicle sharing, biometric authentication, blockchain, stellar, webauthn" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ShareCar" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23000000' width='180' height='180'/><text x='90' y='90' font-size='80' fill='%2306b6d4' text-anchor='middle' dominant-baseline='central'>🔑</text></svg>" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>ShareCar - Alquiler Seguro de Vehículos</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Service Worker registration para PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+          console.log('Service Worker no disponible');
+        });
+      }
+      
+      // Detección de capacidades biométricas
+      if (window.PublicKeyCredential) {
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(available => {
+            console.log('Biometric available:', available);
+            if (available) {
+              document.documentElement.dataset.biometricAvailable = 'true';
+            }
+          });
+      }
+    </script>
+  </body>
+</html>

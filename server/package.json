@@ -1,0 +1,14 @@
+{
+  "name": "webauthn-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^6.0.0",
+    "base64url": "^3.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

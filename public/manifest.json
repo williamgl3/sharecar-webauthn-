@@ -1,0 +1,97 @@
+{
+  "name": "ShareCar - Comparte Vehículos Eléctricos",
+  "short_name": "ShareCar",
+  "description": "Plataforma segura de alquiler de vehículos eléctricos con autenticación biométrica y blockchain Stellar",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%2306b6d4' text-anchor='middle' dominant-baseline='central'>🔑</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23000000' width='512' height='512'/><text x='50%' y='50%' font-size='200' fill='%2306b6d4' text-anchor='middle' dominant-baseline='central'>🔑</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%2306b6d4' text-anchor='middle' dominant-baseline='central'>🚗</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23000000' width='540' height='720'/><text x='270' y='100' font-size='40' fill='%2306b6d4' text-anchor='middle' font-weight='bold'>ShareCar</text><text x='270' y='200' font-size='30' fill='%23ffffff' text-anchor='middle'>Comparte con Seguridad</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Rentar Vehículo",
+      "short_name": "Rentar",
+      "description": "Busca y renta un vehículo eléctrico",
+      "url": "/?view=search",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23000000' width='96' height='96'/><text x='48' y='48' font-size='40' fill='%2306b6d4' text-anchor='middle' dominant-baseline='central'>🚗</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Mi Billetera",
+      "short_name": "Billetera",
+      "description": "Ver mi billetera Stellar y saldo XLM",
+      "url": "/?view=wallet",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23000000' width='96' height='96'/><text x='48' y='48' font-size='40' fill='%23a78bfa' text-anchor='middle' dominant-baseline='central'>💼</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Publicar Vehículo",
+      "short_name": "Publicar",
+      "description": "Publica tu vehículo para alquilar",
+      "url": "/?view=publish",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23000000' width='96' height='96'/><text x='48' y='48' font-size='40' fill='%2348bb78' text-anchor='middle' dominant-baseline='central'>➕</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    "lifestyle",
+    "travel",
+    "productivity"
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false,
+  "related_applications": []
+}

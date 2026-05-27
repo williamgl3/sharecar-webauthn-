@@ -1,0 +1,181 @@
+{
+  "users": [
+    {
+      "id": "wr5_vxwA3laRFNTaY7IbiA",
+      "username": "noe_1779154172",
+      "password": {
+        "salt": "74e975d641fb8d333b057acda2df376d",
+        "hash": "efa3ac8915b840cbaf0aff81b9bb59cdb3a66a7ca8745d46c21dc53f71554c6e38a6046695961843c7687040a704ee52739c90542792714b3b55fc39a9a7ed50"
+      },
+      "credentials": []
+    },
+    {
+      "id": "pHWjo7uHIFviBXlLvJHdww",
+      "username": "noe_1779154193",
+      "password": {
+        "salt": "0873b59b3eaf63266e3c04abf45e3500",
+        "hash": "f6bf53984d6b4f40af2bfcc661a6ae4083fa6030c84cb4293677988a201b523c20195d55cff6f1d9f3651c429c0de512e3ad3b6e3ccfdf94c19e8384705e86ae"
+      },
+      "credentials": []
+    },
+    {
+      "id": "EBjJ3Rd8K3nYB4OsmnmH4g",
+      "username": "test_user",
+      "password": {
+        "salt": "73e743392f71ddd36d2e7a0d96a7ba35",
+        "hash": "1b79a4a50cedb5063d34d59131ec87b7ddd4bbf2642643d035cbc5343f85108653fca64b70410e818069c6f83c0598bcad3974030978f816edb03adc4a959e52"
+      },
+      "credentials": []
+    },
+    {
+      "id": "nXoH2SqvmHPF2dUP9464uw",
+      "username": "pruebauser",
+      "password": {
+        "salt": "71684f56c510dd71b6644a49c1e16313",
+        "hash": "5b4d4982e5676f020a71a50a667dff0ce814a4460cda630763cedf72543443d7db9f6c15b2ba4039d667fb7b876a9df2dd216532e09bf9d827ce00a25660e14c"
+      },
+      "credentials": []
+    },
+    {
+      "id": "K7jheL1wmqWLrPSDv8g3ng",
+      "username": "testuser123",
+      "password": {
+        "salt": "849a196b68209e4f6c7d7e1f496d9c31",
+        "hash": "56518540603e89675f080b6a4f75731be37f28fd190b274e2c13f5cbfbb364d7f08d84265485d07a890d0b4fbf28ec47159fd85849420ea75ba3fccdf37c7ec8"
+      },
+      "credentials": []
+    },
+    {
+      "id": "EGolH-5k7NrtLCG76mzICQ",
+      "username": "noe_test_20260519",
+      "password": {
+        "salt": "47405f39f3a801121c23a083bf759a0f",
+        "hash": "40d7719f8c52a7e9cd213ea825b8f64022560a31fe419d2b9844151708b96eef420fd1ef431aaeeab0c6c05c023c784775370aa78680b56ed98bf8a5085118b1"
+      },
+      "credentials": []
+    },
+    {
+      "id": "YPvxnZ21ts52sd9PC1Dzrw",
+      "username": "carla",
+      "password": {
+        "salt": "f9a20eeda926241bf1d7dd510e1df4be",
+        "hash": "9cf94590dbd9f54ce3bf78eaf66be84aca58edffe73fa3b6c28625df7531f7b3c032db94212a1ef5b0dfcb82b6f5a0a6596fb12f08eb3c4d65f171ebafc5e189"
+      },
+      "credentials": [],
+      "faceImage": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUTEhIVFhUVFRUVFRUVFRUVFRUVFhUVFRUYHSggGBolGxUVITEhJSkrLi4uFx8zODMsNygtLisBCgoKDg0OFQ8PFSsdFR0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAKgBLAMBIgACEQEDEQH/xAAXAAEBAQEAAAAAAAAAAAAAAAABAgME/8QAFgEBAQEAAAAAAAAAAAAAAAAAAQAC/9oADAMBAAIQAxAAAAF//8QAFhABAQEAAAAAAAAAAAAAAAAAAQAR/9oACAEBAAE/AFP/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAECAQE/AFP/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAEDAQE/AFP/2Q=="
+    },
+    {
+      "id": "pDkBJbDFRJ4Sb_uHu23TBA",
+      "username": "ge",
+      "password": {
+        "salt": "90d6a359f76f21ec3c2e194ef546130d",
+        "hash": "38ec37282829b56d8b0a544799010567f2156fbaa5535b29b4c79e9a7cf2d82eb9d4b4f34c091c9b459a2e23ebd342e49ab338f1d4e55b70cd41a29e972780f8"
+      },
+      "credentials": []
+    },
+    {
+      "id": "9mkMd4f2yjYTTf9tkgQxvw",
+      "username": "g",
+      "password": {
+        "salt": "f1caf5a811749e223c4ef4dfaa600c63",
+        "hash": "1334135c88190c0c1e1fec0017a47b9f7a0b3471ef6ead06579c53e80409f0b09988f3c30c864a4eb428952ab9cedac9ffbd85844cc4443cc77189adec6617e2"
+      },
+      "credentials": []
+    },
+    {
+      "id": "JxWrWj4rP0Luzc3_w_e1fw",
+      "username": "n",
+      "password": {
+        "salt": "88607e6dda1692355182a0988441fd6e",
+        "hash": "57ccbec49723784cb96192ff77f37e96e9c8ccd5b69dad7cb8ce03052fd40dc0da84ad824a77c7aa50a3969e487308cbb5c9a1d522c3c3bc04bf4ba105cf8385"
+      },
+      "credentials": []
+    },
+    {
+      "id": "lqI387IVO-cduCtF4A6BCA",
+      "username": "r",
+      "password": {
+        "salt": "b8364b711637f1488434032499ceee31",
+        "hash": "351fbaad8c6e926377f61c1c8807765a148f9e81afe30c9a52d069a32b5c6b4792e08957bf6f37211c5bd2a9c7bf32f7506b64eb0382e2a4140fe9769d293c44"
+      },
+      "credentials": []
+    },
+    {
+      "id": "9wETt86jE3ikX6KXXTpvGQ",
+      "username": "debug_local",
+      "password": {
+        "salt": "9a3c973a5a50398a6c499c91f2c5e16c",
+        "hash": "a6e43785f59a17d7380a67450f4bda3b20a88e74265feb030e635f312448217d743f52319f297f183076770b4d740a614092d73d3b36cbf461d3c840a46bf749"
+      },
+      "credentials": []
+    },
+    {
+      "id": "nZXIrk20ELbqSx_gLeBcOw",
+      "username": "o",
+      "password": {
+        "salt": "c719f35b24ae002d2870fa6bfe7fa42f",
+        "hash": "7dd02dd7499681181971cdb60fdbe96529c27b571d15940e4588647feb66d2e5ad62c990c2e0315197a1c9415fd227f355c54a9423a514076894757cb4c784cf"
+      },
+      "credentials": []
+    },
+    {
+      "id": "COiHMKeQpQN-eLqBT1U3og",
+      "username": "w345",
+      "password": {
+        "salt": "7db2835090235eb5d1b5d186b9797722",
+        "hash": "ceb19272e9547e0d1143deceb2f459e5c2d917b3425d11e0cd022366bbfd00fd53cbb77f26e98ffc031951baad00e3666fdb0a3b54c4e757b67ea4f454b1c625"
+      },
+      "credentials": []
+    },
+    {
+      "id": "w-C9sgwi9EnDHlW8HBQfLQ",
+      "username": "gonzatest2026",
+      "password": {
+        "salt": "6054382eff863357c24928957f7c5ec5",
+        "hash": "e071d24773ebfa3a8e0717cafb2fe578fa2a91e3df6590c8aca8376c67c5244cea448df7ddc8ac902003e1c130c8821ba115f2a57e004c33b5008104483f2aa9"
+      },
+      "credentials": []
+    },
+    {
+      "id": "j63ISOfQDeBMcDOxCHJsew",
+      "username": "w12345",
+      "password": {
+        "salt": "13448b8e181f93baa55474a102481f8b",
+        "hash": "248871bff2a26ceedc2be43ebd58cf61d2ac49aa48502282db12749510beb4d1365919a12f449cb6590c9959da1066d3f21fb99eb7065bf5e820cc266097cf98"
+      },
+      "credentials": []
+    }
+  ],
+  "rentals": [
+    {
+      "id": "oqrfV0ckkRcWjUwW",
+      "vehicleId": "v008",
+      "vehicle": {
+        "id": "v008",
+        "brand": "Chevrolet",
+        "model": "Bolt EV",
+        "year": 2023,
+        "pricePerHour": 18,
+        "description": "Vehículo eléctrico económico y confiable con amplio espacio de maletero",
+        "features": [
+          "Carga rápida",
+          "Pantalla 10.2 pulgadas",
+          "Apple CarPlay",
+          "Maletero amplio"
+        ],
+        "image": "🚗",
+        "rating": 4.5,
+        "reviews": 342,
+        "location": "Centro Comercial Sur",
+        "available": true,
+        "seats": 5,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "417 km"
+      },
+      "userId": "gonzatest2026",
+      "rentalDate": "2026-05-27T19:32:27.193Z",
+      "status": "booked"
+    }
+  ]
+}
