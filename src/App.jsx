@@ -6,7 +6,7 @@ import StellarWallet from './components/StellarWallet';
 import VehicleCatalog from './components/VehicleCatalog';
 import PublishForm from './PublishForm';
 
-const API_URL = 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);

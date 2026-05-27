@@ -12,12 +12,14 @@ const {
 } = require('@simplewebauthn/server');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173' }));
+
+const allowedOrigin = process.env.ORIGIN || 'http://localhost:5173';
+app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
 
 const rpName = 'ShareCar';
-const rpID = 'localhost';
-const origin = 'http://localhost:5173';
+const rpID = process.env.RPID || 'localhost';
+const origin = process.env.ORIGIN || 'http://localhost:5173';
 
 const dataFile = path.join(__dirname, 'data.json');
 const challengeMap = new Map();
@@ -102,6 +104,12 @@ function getAuthenticator(user, credentialID) {
     credentialPublicKey: base64url.toBuffer(credential.publicKey),
     counter: credential.counter,
   };
+}
+
+// Serve static frontend in production
+const distPath = path.join(__dirname, '..', 'dist');
+if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
 }
 
 app.get('/', (_req, res) => res.send({ ok: true }));
@@ -385,7 +393,14 @@ app.get('/rentals/:username', (req, res) => {
   res.send({ ok: true, rentals: userRentals });
 });
 
-const port = 4000;
+// SPA fallback for production
+if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
+const port = process.env.PORT || 4000;
 app.listen(port, () => {
   console.log(`WebAuthn demo server listening on http://localhost:${port}`);
   console.log(`Vehicle catalog loaded: ${vehicleCatalog.length} vehicles`);
