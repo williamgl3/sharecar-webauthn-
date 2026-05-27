@@ -10,10 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@netlify/blobs": "^8.0.0",
+    "@netlify/functions": "^3.1.0",
+    "@simplewebauthn/server": "^6.0.0",
     "@tailwindcss/vite": "^4.3.0",
+    "base64url": "^3.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "serverless-http": "^3.2.0",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
