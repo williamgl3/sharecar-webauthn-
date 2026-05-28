@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LogOut, Home, Plus, Search } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import BiometricAuthForm from './components/BiometricAuthForm';
 import PasswordAuthForm from './components/PasswordAuthForm';
 import StellarWallet from './components/StellarWallet';
 import VehicleCatalog from './components/VehicleCatalog';
+import ReservationsList from './components/ReservationsList';
 import PublishForm from './PublishForm';
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
@@ -36,7 +38,7 @@ function App() {
 
   const loadVehicles = async () => {
     try {
-      const res = await fetch(`${API_URL}/vehicles-catalog`);
+      const res = await fetch(`${API_URL}/vehicles`);
       if (res.ok) {
         const j = await res.json();
         if (j.ok) {
@@ -44,8 +46,7 @@ function App() {
           return;
         }
       }
-      
-      const res2 = await fetch(`${API_URL}/vehicles`);
+      const res2 = await fetch(`${API_URL}/vehicles-catalog`);
       const j2 = await res2.json();
       if (res2.ok && j2.ok) setVehicles(j2.vehicles || []);
     } catch (e) {
@@ -54,7 +55,9 @@ function App() {
   };
 
   useEffect(() => {
-    if (currentUser) loadVehicles();
+    if (currentUser) {
+      loadVehicles();
+    }
   }, [currentUser]);
 
   const handleLogout = () => {
@@ -147,6 +150,14 @@ function App() {
                     }`}
                   >
                     <Search size={18} /> Rentar
+                  </button>
+                  <button
+                    onClick={() => setView('reservations')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
+                      view === 'reservations' ? 'bg-amber-600' : 'hover:bg-gray-800'
+                    }`}
+                  >
+                    <Calendar size={18} /> Mis Reservas
                   </button>
                   <button
                     onClick={() => setView('publish')}
@@ -285,7 +296,10 @@ function App() {
                         >
                           <Plus className="inline mr-2" size={18} /> Publicar Vehículo
                         </button>
-                        <button className="w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition">
+                        <button
+                          onClick={() => setView('reservations')}
+                          className="w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition"
+                        >
                           📊 Mis Reservas
                         </button>
                       </div>
@@ -302,6 +316,13 @@ function App() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {view === 'reservations' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl font-bold">📊 Mis Reservas</h2>
+                <ReservationsList username={currentUser.username} />
               </div>
             )}
 

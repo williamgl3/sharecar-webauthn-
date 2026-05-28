@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Star, MapPin, Zap, Users, Calendar, ChevronRight } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
 
 export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,24 +16,27 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
   // Filter and sort vehicles
   const filteredVehicles = vehicles
     .filter(v => {
-      const matchesSearch = v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           v.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           v.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = (v.model || '').toLowerCase().includes(search) ||
+                           (v.brand || '').toLowerCase().includes(search) ||
+                           (v.description || '').toLowerCase().includes(search);
       const matchesBrand = filterBrand === 'All' || v.brand === filterBrand;
-      const matchesPrice = v.pricePerHour >= priceRange[0] && v.pricePerHour <= priceRange[1];
+      const matchesPrice = (v.pricePerHour || 0) >= priceRange[0] && (v.pricePerHour || 0) <= priceRange[1];
       return matchesSearch && matchesBrand && matchesPrice;
     })
     .sort((a, b) => {
-      if (sortBy === 'price-low') return a.pricePerHour - b.pricePerHour;
-      if (sortBy === 'price-high') return b.pricePerHour - a.pricePerHour;
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'reviews') return b.reviews - a.reviews;
+      if (sortBy === 'price-low') return (a.pricePerHour || 0) - (b.pricePerHour || 0);
+      if (sortBy === 'price-high') return (b.pricePerHour || 0) - (a.pricePerHour || 0);
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'reviews') return (b.reviews || 0) - (a.reviews || 0);
       return 0;
     });
 
   const handleRentClick = (vehicle) => {
     setSelectedVehicle(vehicle);
   };
+
+  const [renting, setRenting] = useState(false);
 
   const confirmRental = async () => {
     if (!currentUser) {
@@ -47,24 +52,29 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
       status: 'booked'
     };
 
+    setRenting(true);
     try {
-      // Save rental to backend
-      const response = await fetch('http://localhost:4000/rentals', {
+      const response = await fetch(`${API_URL}/rentals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rentalData)
       });
 
-      if (response.ok) {
-        alert(`✅ ¡Vehículo reservado!\n\nVehículo: ${selectedVehicle.brand} ${selectedVehicle.model}\nTarifa: $${selectedVehicle.pricePerHour}/hora`);
+      const data = await response.json();
+
+      if (response.ok && data.ok) {
+        const payMsg = data.paymentAmount ? `\nPago: ${data.paymentAmount} XLM descontados` : '';
+        alert(`✅ ¡Vehículo reservado!\n\nVehículo: ${selectedVehicle.brand} ${selectedVehicle.model}\nTarifa: $${selectedVehicle.pricePerHour}/hora${payMsg}`);
         setSelectedVehicle(null);
         onSelectVehicle?.(rentalData);
       } else {
-        alert('Error al reservar el vehículo');
+        alert(data.error || 'Error al reservar el vehículo');
       }
     } catch (error) {
       console.error('Error:', error);
       alert('Error al conectar con el servidor');
+    } finally {
+      setRenting(false);
     }
   };
 
@@ -276,9 +286,10 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
                 </button>
                 <button
                   onClick={confirmRental}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white px-4 py-2 rounded font-semibold transition-all"
+                  disabled={renting}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white px-4 py-2 rounded font-semibold transition-all"
                 >
-                  ✅ Confirmar Reserva
+                  {renting ? '⏳ Procesando pago...' : '✅ Confirmar Reserva'}
                 </button>
               </div>
             </div>

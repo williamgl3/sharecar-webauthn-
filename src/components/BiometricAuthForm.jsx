@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Fingerprint, AlertCircle, CheckCircle, Loader, Eye, EyeOff, Lock, Shield } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
 
 // Helper functions for base64url encoding/decoding
 const base64urlToBytes = (base64url) => {
@@ -11,13 +11,15 @@ const base64urlToBytes = (base64url) => {
   return new Uint8Array(binary.split('').map(c => c.charCodeAt(0)));
 };
 
-const bytesToBase64url = (bytes) => {
-  const binary = String.fromCharCode.apply(null, bytes);
+const bufferToBase64url = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const base64 = btoa(binary);
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
-const BiometricAuthForm = ({ onSuccess, onCancel }) => {
+const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
   const [step, setStep] = useState('method');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,32 +30,57 @@ const BiometricAuthForm = ({ onSuccess, onCancel }) => {
     faceID: false,
     platformAuth: false,
   });
+  const [hasCredentials, setHasCredentials] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('info');
   const [showPassword, setShowPassword] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    const isMobileDevice = /android|iphone|ipad|ipod|windows phone|blackberry|opera mini|silk|kindle/.test(ua);
-    setIsMobile(isMobileDevice);
+    const checkWebAuthn = () => {
+      const ua = navigator.userAgent.toLowerCase();
+      const isMobileDevice = /android|iphone|ipad|ipod|windows phone|blackberry|opera mini|silk|kindle/.test(ua);
 
-    const isWebAuthnSupported = window.PublicKeyCredential !== undefined;
-    setWebauthnSupport(isWebAuthnSupported);
+      const isWebAuthnSupported = window.PublicKeyCredential !== undefined;
 
-    if (isWebAuthnSupported) {
-      Promise.all([
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
-        PublicKeyCredential.isConditionalMediationAvailable?.() || Promise.resolve(false),
-      ]).then(([isPlatform]) => {
-        setBiometricCapabilities({
-          platformAuth: isPlatform,
-          faceID: isMobileDevice && /iphone|ipad/.test(ua),
-          fingerprint: isMobileDevice || isPlatform,
+      if (isWebAuthnSupported) {
+        Promise.all([
+          PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+          PublicKeyCredential.isConditionalMediationAvailable?.() || Promise.resolve(false),
+        ]).then(([isPlatform]) => {
+          setBiometricCapabilities({
+            platformAuth: isPlatform,
+            faceID: isMobileDevice && /iphone|ipad/.test(ua),
+            fingerprint: isMobileDevice || isPlatform,
+          });
         });
-      });
-    }
+      }
+
+      setIsMobile(isMobileDevice);
+      setWebauthnSupport(isWebAuthnSupported);
+    };
+
+    checkWebAuthn();
   }, []);
+
+  useEffect(() => {
+    if (!username.trim()) {
+      setHasCredentials(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/users/${encodeURIComponent(username.trim())}/credentials`);
+        const data = await res.json();
+        setHasCredentials(data.hasCredentials);
+      } catch {
+        setHasCredentials(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [username]);
 
   const handlePasskeyLogin = async () => {
     if (!username.trim()) {
@@ -66,46 +93,47 @@ const BiometricAuthForm = ({ onSuccess, onCancel }) => {
     setStep('authenticating');
 
     try {
-      const response = await fetch(`${API_URL}/authenticate/options`, {
+      const response = await fetch(`${API_URL}/auth/options`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim() }),
       });
 
-      if (!response.ok) throw new Error('Usuario no encontrado');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Usuario no encontrado');
+      }
 
       const options = await response.json();
-      if (!options.ok) throw new Error(options.error || 'Error en servidor');
 
       const publicKey = {
-        ...options.options,
-        challenge: base64urlToBytes(options.options.challenge),
-        allowCredentials: (options.options.allowCredentials || []).map((cred) => ({
+        challenge: base64urlToBytes(options.challenge),
+        rpId: options.rpId,
+        allowCredentials: (options.allowCredentials || []).map((cred) => ({
           ...cred,
           id: base64urlToBytes(cred.id),
         })),
-        timeout: 60000,
         userVerification: isMobile ? 'preferred' : 'required',
-        mediation: 'optional',
+        timeout: options.timeout || 60000,
       };
 
       const assertion = await navigator.credentials.get({ publicKey });
       if (!assertion) throw new Error('Autenticación cancelada');
 
-      const verifyResponse = await fetch(`${API_URL}/authenticate/verify`, {
+      const verifyResponse = await fetch(`${API_URL}/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username.trim(),
           assertion: {
             id: assertion.id,
-            rawId: bytesToBase64url(assertion.rawId),
+            rawId: bufferToBase64url(assertion.rawId),
             type: assertion.type,
             response: {
-              clientDataJSON: bytesToBase64url(assertion.response.clientDataJSON),
-              authenticatorData: bytesToBase64url(assertion.response.authenticatorData),
-              signature: bytesToBase64url(assertion.response.signature),
-              userHandle: assertion.response.userHandle ? bytesToBase64url(assertion.response.userHandle) : null,
+              clientDataJSON: bufferToBase64url(assertion.response.clientDataJSON),
+              authenticatorData: bufferToBase64url(assertion.response.authenticatorData),
+              signature: bufferToBase64url(assertion.response.signature),
+              userHandle: assertion.response.userHandle ? bufferToBase64url(assertion.response.userHandle) : null,
             },
           },
         }),
@@ -147,25 +175,31 @@ const BiometricAuthForm = ({ onSuccess, onCancel }) => {
         body: JSON.stringify({ username: username.trim() }),
       });
 
-      if (!response.ok) throw new Error('Error al generar opciones');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al generar opciones');
+      }
 
       const options = await response.json();
-      if (!options.ok) throw new Error(options.error || 'Error en servidor');
 
       const publicKey = {
-        ...options.options,
-        challenge: base64urlToBytes(options.options.challenge),
+        challenge: base64urlToBytes(options.challenge),
+        rp: options.rp,
         user: {
-          ...options.options.user,
-          id: base64urlToBytes(options.options.user.id),
+          ...options.user,
+          id: base64urlToBytes(options.user.id),
         },
-        excludeCredentials: (options.options.excludeCredentials || []).map((cred) => ({
+        pubKeyCredParams: options.pubKeyCredParams,
+        attestation: options.attestation,
+        authenticatorSelection: {
+          ...options.authenticatorSelection,
+          userVerification: isMobile ? 'preferred' : 'required',
+        },
+        excludeCredentials: (options.excludeCredentials || []).map((cred) => ({
           ...cred,
           id: base64urlToBytes(cred.id),
         })),
-        timeout: 60000,
-        userVerification: isMobile ? 'preferred' : 'required',
-        mediation: 'optional',
+        timeout: options.timeout || 60000,
       };
 
       const attestation = await navigator.credentials.create({ publicKey });
@@ -178,11 +212,11 @@ const BiometricAuthForm = ({ onSuccess, onCancel }) => {
           username: username.trim(),
           attestation: {
             id: attestation.id,
-            rawId: bytesToBase64url(attestation.rawId),
+            rawId: bufferToBase64url(attestation.rawId),
             type: attestation.type,
             response: {
-              clientDataJSON: bytesToBase64url(attestation.response.clientDataJSON),
-              attestationObject: bytesToBase64url(attestation.response.attestationObject),
+              clientDataJSON: bufferToBase64url(attestation.response.clientDataJSON),
+              attestationObject: bufferToBase64url(attestation.response.attestationObject),
             },
           },
         }),
@@ -294,24 +328,39 @@ const BiometricAuthForm = ({ onSuccess, onCancel }) => {
           {webauthnSupport && (
             <div className="space-y-3">
               <div className="text-xs font-bold text-cyan-400 tracking-wide">MÉTODO SEGURO RECOMENDADO</div>
-              <button
-                onClick={handlePasskeyLogin}
-                className="w-full px-4 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
-              >
-                <Fingerprint size={24} className="animate-pulse" />
-                <div className="text-left">
-                  <div className="font-bold text-lg">{getBiometricLabel()}</div>
-                  <div className="text-xs text-cyan-100">Iniciar sesión con passkey</div>
-                </div>
-              </button>
+              {hasCredentials ? (
+                <button
+                  onClick={handlePasskeyLogin}
+                  className="w-full px-4 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                >
+                  <Fingerprint size={24} className="animate-pulse" />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">{getBiometricLabel()}</div>
+                    <div className="text-xs text-cyan-100">Iniciar sesión con passkey</div>
+                  </div>
+                </button>
+              ) : (
+                <button
+                  onClick={handlePasskeyRegistration}
+                  className="w-full px-4 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                >
+                  <CheckCircle size={24} />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Crear Passkey</div>
+                    <div className="text-xs text-purple-100">Registra tu huella, Face ID o PIN</div>
+                  </div>
+                </button>
+              )}
 
-              <button
-                onClick={handlePasskeyRegistration}
-                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} />
-                <span>Crear Nuevo Passkey</span>
-              </button>
+              {hasCredentials && (
+                <button
+                  onClick={handlePasskeyRegistration}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={18} />
+                  <span>Registrar Otro Passkey</span>
+                </button>
+              )}
             </div>
           )}
 
