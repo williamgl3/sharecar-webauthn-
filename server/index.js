@@ -11,19 +11,36 @@ const {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } = require('@simplewebauthn/server');
+const {
+  initPlatformWallet,
+  getPlatformPublicKey,
+  createUserWallet,
+  fundTestnetWallet,
+  getWalletBalance,
+  makePayment,
+} = require('./stellar.js');
 
 function createApp() {
   const app = express();
 
   const allowedOrigin = process.env.ORIGIN || 'http://localhost:5173';
-  app.use(cors({ origin: allowedOrigin }));
+  app.use(cors({ origin: (origin, cb) => cb(null, true) }));
   app.use(express.json({ limit: '10mb' }));
 
   const rpName = 'ShareCar';
-  const rpID = process.env.RPID || 'localhost';
-  const origin = process.env.ORIGIN || 'http://localhost:5173';
-
   const challengeMap = new Map();
+
+  function getOrigin(req) {
+    return req.headers.origin || req.headers.host || allowedOrigin;
+  }
+
+  function getRPID(req) {
+    try {
+      const o = getOrigin(req);
+      if (o.startsWith('http')) return new URL(o).hostname;
+      return o.split(':')[0];
+    } catch { return 'localhost'; }
+  }
 
   async function saveUser(updatedUser) {
     const data = await readData();
@@ -91,14 +108,25 @@ function createApp() {
     if (!username || !password) return res.status(400).send({ error: 'username and password required' });
     const existing = await getUser(username);
     if (existing) return res.status(400).send({ error: 'user exists' });
+    const wallet = await createUserWallet(username);
     const user = {
       id: base64url.encode(crypto.randomBytes(16)),
       username,
       password: createPassword(password),
       credentials: [],
+      stellarPublicKey: wallet.publicKey,
+      stellarSecretKey: wallet.secretKey,
     };
     await saveUser(user);
-    res.send({ ok: true, user: { id: user.id, username: user.username } });
+    try {
+      await fundTestnetWallet(wallet.publicKey);
+    } catch (e) {
+      console.log('Friendbot fund skipped (testnet may not be available):', e.message);
+    }
+    res.send({
+      ok: true,
+      user: { id: user.id, username: user.username, stellarPublicKey: wallet.publicKey },
+    });
   });
 
   app.post('/login', async (req, res) => {
@@ -107,7 +135,14 @@ function createApp() {
     const user = await getUser(username);
     if (!user) return res.status(400).send({ error: 'user not found' });
     if (!verifyPassword(password, user.password)) return res.status(400).send({ error: 'invalid credentials' });
-    res.send({ ok: true, user: { id: user.id, username: user.username } });
+    res.send({
+      ok: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        stellarPublicKey: user.stellarPublicKey || null,
+      },
+    });
   });
 
   app.post('/register/options', async (req, res) => {
@@ -115,13 +150,19 @@ function createApp() {
     if (!username) return res.status(400).send({ error: 'username required' });
     const user = await getUser(username);
     if (!user) return res.status(400).send({ error: 'user not found' });
+    const rpID = getRPID(req);
     const options = generateRegistrationOptions({
-      rpName, rpID,
+      rpName,
+      rpID,
       userID: user.id,
       userName: user.username,
-      attestationType: 'direct',
-      authenticatorSelection: { userVerification: 'required', authenticatorAttachment: 'platform' },
-      supportedAlgorithmIDs: [-7],
+      userDisplayName: user.username,
+      attestationType: 'none',
+      authenticatorSelection: {
+        userVerification: 'required',
+        residentKey: 'required',
+      },
+      supportedAlgorithmIDs: [-7, -257],
       timeout: 60000,
       excludeCredentials: toCredentialList(user),
     });
@@ -134,9 +175,11 @@ function createApp() {
     if (!username || !attestation) return res.status(400).send({ error: 'missing data' });
     const user = await getUser(username);
     if (!user) return res.status(400).send({ error: 'user not found' });
+    const origin = getOrigin(req);
+    const rpID = getRPID(req);
     try {
       const verification = await verifyRegistrationResponse({
-        response: attestation,
+        credential: attestation,
         expectedChallenge: challengeMap.get(username),
         expectedOrigin: origin,
         expectedRPID: rpID,
@@ -158,6 +201,12 @@ function createApp() {
     }
   });
 
+  app.get('/users/:username/credentials', async (req, res) => {
+    const user = await getUser(req.params.username);
+    if (!user) return res.json({ hasCredentials: false });
+    res.json({ hasCredentials: Array.isArray(user.credentials) && user.credentials.length > 0 });
+  });
+
   app.post('/auth/options', async (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).send({ error: 'username required' });
@@ -166,6 +215,7 @@ function createApp() {
     if (!user.credentials || user.credentials.length === 0) {
       return res.status(400).send({ error: 'no passkey registered' });
     }
+    const rpID = getRPID(req);
     const options = generateAuthenticationOptions({
       timeout: 60000,
       allowCredentials: toCredentialList(user),
@@ -181,11 +231,13 @@ function createApp() {
     if (!username || !assertion) return res.status(400).send({ error: 'missing data' });
     const user = await getUser(username);
     if (!user) return res.status(400).send({ error: 'user not found' });
+    const origin = getOrigin(req);
+    const rpID = getRPID(req);
     try {
       const authenticator = getAuthenticator(user, assertion.id);
       if (!authenticator) return res.status(400).send({ error: 'credential not found' });
       const verification = await verifyAuthenticationResponse({
-        response: assertion,
+        credential: assertion,
         expectedChallenge: challengeMap.get(username),
         expectedOrigin: origin,
         expectedRPID: rpID,
@@ -202,6 +254,46 @@ function createApp() {
     } catch (error) {
       console.error(error);
       res.status(400).send({ error: error.message });
+    }
+  });
+
+  app.get('/wallet/:username', async (req, res) => {
+    const user = await getUser(req.params.username);
+    if (!user || !user.stellarPublicKey) return res.status(400).send({ error: 'wallet not found' });
+    const balances = await getWalletBalance(user.stellarPublicKey);
+    res.send({
+      ok: true,
+      publicKey: user.stellarPublicKey,
+      balances,
+      platformPublicKey: getPlatformPublicKey(),
+    });
+  });
+
+  app.post('/wallet/fund', async (req, res) => {
+    const { username } = req.body;
+    const user = await getUser(username);
+    if (!user || !user.stellarPublicKey) return res.status(400).send({ error: 'wallet not found' });
+    try {
+      const result = await fundTestnetWallet(user.stellarPublicKey);
+      res.send({ ok: true, result });
+    } catch (e) {
+      res.status(500).send({ error: e.message });
+    }
+  });
+
+  app.post('/wallet/pay', async (req, res) => {
+    const { username, amount } = req.body;
+    if (!username || !amount) return res.status(400).send({ error: 'username and amount required' });
+    const user = await getUser(username);
+    if (!user || !user.stellarSecretKey) return res.status(400).send({ error: 'wallet not configured' });
+    const platformKey = getPlatformPublicKey();
+    if (!platformKey) return res.status(500).send({ error: 'platform wallet not initialized' });
+    try {
+      const hash = await makePayment(user.stellarSecretKey, platformKey, amount);
+      res.send({ ok: true, hash, amount });
+    } catch (e) {
+      console.error('Payment error:', e);
+      res.status(400).send({ error: e.message || 'Payment failed' });
     }
   });
 
@@ -229,7 +321,29 @@ function createApp() {
 
   app.get('/vehicles', async (_req, res) => {
     const published = await getVehicles();
-    res.send({ ok: true, vehicles: published.length > 0 ? published : vehicleCatalog });
+    let vehicles = [...vehicleCatalog];
+    if (published.length > 0) {
+      const mapped = published.map(v => ({
+        id: v.id,
+        brand: v.make || 'Marca no especificada',
+        model: v.model || 'Modelo no especificado',
+        year: new Date().getFullYear(),
+        pricePerHour: v.pricePerHour || 0,
+        description: `Vehículo publicado por ${v.owner || 'usuario desconocido'}`,
+        features: [],
+        image: 'https://picsum.photos/seed/car-default/400/300',
+        rating: 0,
+        reviews: 0,
+        location: 'No especificada',
+        available: true,
+        seats: 4,
+        transmission: 'Automático',
+        fuelType: 'Eléctrico',
+        range: 'N/A',
+      }));
+      vehicles = [...vehicles, ...mapped];
+    }
+    res.send({ ok: true, vehicles });
   });
 
   app.get('/vehicles-catalog', (_req, res) => {
@@ -252,6 +366,20 @@ function createApp() {
   app.post('/rentals', async (req, res) => {
     const { vehicleId, vehicle, userId, rentalDate } = req.body;
     if (!vehicleId || !userId) return res.status(400).send({ error: 'vehicleId and userId required' });
+    const user = await getUser(userId);
+    if (user && user.stellarSecretKey) {
+      const price = (vehicle && vehicle.pricePerHour) || 10;
+      const platformKey = getPlatformPublicKey();
+      if (platformKey) {
+        try {
+          const hash = await makePayment(user.stellarSecretKey, platformKey, price);
+          console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
+        } catch (e) {
+          return res.status(400).send({ error: `Payment failed: ${e.message}. Ensure your wallet has funds.` });
+        }
+      }
+    }
+    const paymentAmount = (vehicle && vehicle.pricePerHour) || 0;
     const data = await readData();
     data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
     data.rentals.push({
@@ -259,9 +387,11 @@ function createApp() {
       vehicleId, vehicle, userId,
       rentalDate: rentalDate || new Date().toISOString(),
       status: 'booked',
+      paymentAmount,
+      paymentCurrency: 'XLM',
     });
     await writeData(data);
-    res.send({ ok: true });
+    res.send({ ok: true, paymentAmount, paymentCurrency: 'XLM' });
   });
 
   app.get('/rentals/:username', async (req, res) => {
@@ -280,11 +410,14 @@ function createApp() {
 }
 
 if (require.main === module) {
-  const app = createApp();
-  const port = process.env.PORT || 4000;
-  app.listen(port, () => {
-    console.log(`WebAuthn demo server listening on http://localhost:${port}`);
-  });
+  (async () => {
+    await initPlatformWallet();
+    const app = createApp();
+    const port = process.env.PORT || 4000;
+    app.listen(port, () => {
+      console.log(`WebAuthn demo server listening on http://localhost:${port}`);
+    });
+  })();
 }
 
 module.exports = { createApp };

@@ -37,23 +37,46 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const checkWebAuthn = () => {
+    const checkWebAuthn = async () => {
       const ua = navigator.userAgent.toLowerCase();
       const isMobileDevice = /android|iphone|ipad|ipod|windows phone|blackberry|opera mini|silk|kindle/.test(ua);
+      const isAndroid = /android/.test(ua);
+      const isIOS = /iphone|ipad/.test(ua);
+      const isWindows = /windows/.test(ua);
+      const isMac = /mac/.test(ua);
 
       const isWebAuthnSupported = window.PublicKeyCredential !== undefined;
 
       if (isWebAuthnSupported) {
-        Promise.all([
-          PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
-          PublicKeyCredential.isConditionalMediationAvailable?.() || Promise.resolve(false),
-        ]).then(([isPlatform]) => {
+        try {
+          const [isPlatform, isConditional] = await Promise.all([
+            PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+            PublicKeyCredential.isConditionalMediationAvailable?.() || Promise.resolve(false),
+          ]);
+
           setBiometricCapabilities({
             platformAuth: isPlatform,
-            faceID: isMobileDevice && /iphone|ipad/.test(ua),
-            fingerprint: isMobileDevice || isPlatform,
+            faceID: isIOS || (isAndroid && isPlatform),
+            fingerprint: isPlatform || isMobileDevice,
           });
-        });
+
+          console.log('Biometric capabilities:', {
+            platform: isPlatform,
+            conditional: isConditional,
+            isMobile: isMobileDevice,
+            isAndroid,
+            isIOS,
+            isWindows,
+            isMac,
+          });
+        } catch (error) {
+          console.log('Error checking biometric capabilities:', error);
+          setBiometricCapabilities({
+            platformAuth: false,
+            faceID: isIOS,
+            fingerprint: isMobileDevice,
+          });
+        }
       }
 
       setIsMobile(isMobileDevice);
@@ -89,6 +112,12 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
       return;
     }
 
+    if (!webauthnSupport) {
+      setMessage('❌ Tu navegador no soporta WebAuthn. Usa otro navegador.');
+      setMessageType('error');
+      return;
+    }
+
     setMessage('');
     setStep('authenticating');
 
@@ -117,7 +146,13 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
         timeout: options.timeout || 60000,
       };
 
-      const assertion = await navigator.credentials.get({ publicKey });
+      let assertion;
+      try {
+        assertion = await navigator.credentials.get({ publicKey });
+      } catch (webauthnError) {
+        throw new Error(`Error de WebAuthn: ${webauthnError.message}`);
+      }
+
       if (!assertion) throw new Error('Autenticación cancelada');
 
       const verifyResponse = await fetch(`${API_URL}/auth/verify`, {
@@ -152,6 +187,7 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
         });
       }, 1500);
     } catch (error) {
+      console.error('Login error:', error);
       setMessage(`❌ ${error.message}`);
       setMessageType('error');
       setStep('method');
@@ -161,6 +197,12 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
   const handlePasskeyRegistration = async () => {
     if (!username.trim()) {
       setMessage('Ingresa un usuario');
+      setMessageType('error');
+      return;
+    }
+
+    if (!webauthnSupport) {
+      setMessage('❌ Tu navegador no soporta WebAuthn. Usa otro navegador.');
       setMessageType('error');
       return;
     }
@@ -202,7 +244,13 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
         timeout: options.timeout || 60000,
       };
 
-      const attestation = await navigator.credentials.create({ publicKey });
+      let attestation;
+      try {
+        attestation = await navigator.credentials.create({ publicKey });
+      } catch (webauthnError) {
+        throw new Error(`Error de WebAuthn: ${webauthnError.message}`);
+      }
+
       if (!attestation) throw new Error('Registro cancelado');
 
       const verifyResponse = await fetch(`${API_URL}/register/verify`, {
@@ -235,6 +283,7 @@ const BiometricAuthForm = ({ onSuccess, onCancel, initialMode }) => {
         });
       }, 1500);
     } catch (error) {
+      console.error('Registration error:', error);
       setMessage(`❌ ${error.message}`);
       setMessageType('error');
       setStep('method');

@@ -144,6 +144,80 @@
         "hash": "248871bff2a26ceedc2be43ebd58cf61d2ac49aa48502282db12749510beb4d1365919a12f449cb6590c9959da1066d3f21fb99eb7065bf5e820cc266097cf98"
       },
       "credentials": []
+    },
+    {
+      "id": "URcG8uMEKx6VFNOSIwlanw",
+      "username": "testuser",
+      "password": {
+        "salt": "8567aca47e66e132184ec9a911bc27ca",
+        "hash": "83ebb56a90c27bd44b7a055a0d7d4d6cf975fcbb905415aed8627b32351249a6fa786e08f9cb94f62098a7602888c8d18db3a0e27032d160470eb2178ed9705c"
+      },
+      "credentials": []
+    },
+    {
+      "id": "uXeAmhgLwg1PhXATybBG2w",
+      "username": "test_61135",
+      "password": {
+        "salt": "25a27d27a894d5602e5ea8a6958a3942",
+        "hash": "8f3462d653023e46433f6b6fc01f7b8f711bfd3ed6945470ccabc41cf7cab5b4aa8a94145c5a6a9c8c796facaf1e29c159a3d170f166c1fe7609591f44cee43a"
+      },
+      "credentials": []
+    },
+    {
+      "id": "YoChRMWW4dOWkP8TGFKuQA",
+      "username": "testuser_96044",
+      "password": {
+        "salt": "0aadb2e81b53d85a2bc43f95790a2a9c",
+        "hash": "ae67291ed8c0ce1632c3ece11a343f4f5e0de0d9967656fb4beaa8ce5607b1a9182df9521ed0626f5c80287ec19803e956bd425649391f56c291e6fc35df67c1"
+      },
+      "credentials": []
+    },
+    {
+      "id": "Pa41wSl4VW5fBQKUL35HJQ",
+      "username": "finaltest_38651",
+      "password": {
+        "salt": "1c327b70f8077a92c8b1be2152b93876",
+        "hash": "649f72ffa7b858c51f8e36e19cebd223e664306cce41675e0b7834c11a9b363cf510c8e68f3adc7293cb4b99e9740510e388c3dc38fa4839b7e01fca89be7eeb"
+      },
+      "credentials": []
+    },
+    {
+      "id": "3V2Nk-vM2pNffsJOghlH9w",
+      "username": "w321",
+      "password": {
+        "salt": "f8d152900c7664009def0a45ecd337da",
+        "hash": "2975516fa8466491e79b43c647aad118dcc43a01fee8a87378b387b49b7f932a710bb269746a6a61eb036bcfc8929c4e97871dced5fd251c82aff9adae31b815"
+      },
+      "credentials": []
+    },
+    {
+      "id": "FW5MDm8ejBZQFsLIVmmnKg",
+      "username": "e2e_12907",
+      "password": {
+        "salt": "9fce3506c7cebf9b58c8d6ad4bee3e54",
+        "hash": "cb0b91107b50b90297612c2a28666551bbb9c1d5f54d0c3f766ca87ea4e91454326fe59e8b38da7a3ea75a1d36596a480fcebb96e56fada5b22e470be77cbf62"
+      },
+      "credentials": []
+    },
+    {
+      "id": "ZgwXsWu0nv5UXt4eXGN1Mg",
+      "username": "reserv_34732",
+      "password": {
+        "salt": "da70a456d83ac24b7aa4fa21d61c79a6",
+        "hash": "dfa7cec8be3709f99ffdf940e450c4982e13f3ae5898aa19fd2fecb24b6d8a2fd276e5c3e59938f293dc1119f47448459d4484c42c71df71a33523053b699c95"
+      },
+      "credentials": []
+    },
+    {
+      "id": "HpyUsHvaTBMX5h6ky6ntIg",
+      "username": "finale2e_99131",
+      "password": {
+        "salt": "afc8929260330e8ef15abb686e16c763",
+        "hash": "8087c074b2e5ebc0aa30588f3963b700f448022d87246b5fa61a3a93f3da73b3a1183a87865b490d3bae41823a4122a3bdc5aa31c86cf65f5ad43ebdd8bf680a"
+      },
+      "credentials": [],
+      "stellarPublicKey": "GBUWQFH3RGVFXNNF44FUNMPBORETNLFE4FIR3UKLLCS2UN47BBVNCO65",
+      "stellarSecretKey": "SAKG6WYRBOUN424NXW53EM3DNPZAQ5VS3SDYRDPI44OUXVCHBCRMOOE3"
     }
   ],
   "rentals": [
@@ -176,6 +250,191 @@
       "userId": "gonzatest2026",
       "rentalDate": "2026-05-27T19:32:27.193Z",
       "status": "booked"
+    },
+    {
+      "id": "IKiqZNjCJdaQMyjH",
+      "vehicleId": "v005",
+      "vehicle": {
+        "id": "v005",
+        "brand": "Audi",
+        "model": "e-tron GT",
+        "year": 2024,
+        "pricePerHour": 40,
+        "description": "Superdeportivo eléctrico ultra-lujoso con aceleración extrema y estilo futurista",
+        "features": [
+          "Carga 80% en 20 min",
+          "Asientos deportivos",
+          "Sonido Bang & Olufsen",
+          "Transmisión Porsche"
+        ],
+        "image": "https://picsum.photos/seed/audi/400/300",
+        "rating": 5,
+        "reviews": 78,
+        "location": "Zona Premium - Aeropuerto",
+        "available": true,
+        "seats": 4,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "480 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-27T23:36:03.445Z",
+      "status": "booked"
+    },
+    {
+      "id": "ORy0gbtyW6PSF3ZJ",
+      "vehicleId": "v001",
+      "vehicle": {
+        "model": "E2E",
+        "brand": "Test"
+      },
+      "userId": "e2e_12907",
+      "rentalDate": "2026-05-27T23:42:53.804Z",
+      "status": "booked"
+    },
+    {
+      "id": "6SXdkP7Yu12S5Nzs",
+      "vehicleId": "v005",
+      "vehicle": {
+        "id": "v005",
+        "brand": "Audi",
+        "model": "e-tron GT",
+        "year": 2024,
+        "pricePerHour": 40,
+        "description": "Superdeportivo eléctrico ultra-lujoso con aceleración extrema y estilo futurista",
+        "features": [
+          "Carga 80% en 20 min",
+          "Asientos deportivos",
+          "Sonido Bang & Olufsen",
+          "Transmisión Porsche"
+        ],
+        "image": "https://picsum.photos/seed/audi/400/300",
+        "rating": 5,
+        "reviews": 78,
+        "location": "Zona Premium - Aeropuerto",
+        "available": true,
+        "seats": 4,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "480 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-28T00:34:03.303Z",
+      "status": "booked"
+    },
+    {
+      "id": "YB_JMscXfZV0MkU_",
+      "vehicleId": "v002",
+      "vehicle": {
+        "id": "v002",
+        "brand": "Tesla",
+        "model": "Model Y Long Range",
+        "year": 2024,
+        "pricePerHour": 35,
+        "description": "SUV eléctrico de lujo con capacidad de 7 pasajeros y alcance de 500 km",
+        "features": [
+          "7 asientos",
+          "Panoramic roof",
+          "Carga superrápida",
+          "Modo independiente"
+        ],
+        "image": "https://picsum.photos/seed/tesla2/400/300",
+        "rating": 4.9,
+        "reviews": 245,
+        "location": "Centro Comercial North",
+        "available": true,
+        "seats": 7,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "500 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-28T00:34:38.689Z",
+      "status": "booked"
+    },
+    {
+      "id": "-l17p5RmHBX1nDhR",
+      "vehicleId": "v001",
+      "vehicle": {
+        "description": "Test",
+        "pricePerHour": 25,
+        "location": "Center",
+        "rating": 4.8,
+        "seats": 5,
+        "range": "500 km",
+        "transmission": "Auto",
+        "model": "Model 3",
+        "brand": "Tesla"
+      },
+      "userId": "reserv_34732",
+      "rentalDate": "2026-05-27T20:00:00Z",
+      "status": "booked"
+    },
+    {
+      "id": "02_rk9neA1iSzlSu",
+      "vehicleId": "v001",
+      "vehicle": {
+        "brand": "Tesla",
+        "pricePerHour": 25,
+        "model": "Model 3"
+      },
+      "userId": "finale2e_99131",
+      "rentalDate": "2026-05-28T00:46:46.988Z",
+      "status": "booked",
+      "paymentAmount": 25,
+      "paymentCurrency": "XLM"
+    },
+    {
+      "id": "6jDlEsSLuvK19o0t",
+      "vehicleId": "v005",
+      "vehicle": {
+        "id": "v005",
+        "brand": "Audi",
+        "model": "e-tron GT",
+        "year": 2024,
+        "pricePerHour": 40,
+        "description": "Superdeportivo eléctrico ultra-lujoso con aceleración extrema y estilo futurista",
+        "features": [
+          "Carga 80% en 20 min",
+          "Asientos deportivos",
+          "Sonido Bang & Olufsen",
+          "Transmisión Porsche"
+        ],
+        "image": "https://picsum.photos/seed/audi/400/300",
+        "rating": 5,
+        "reviews": 78,
+        "location": "Zona Premium - Aeropuerto",
+        "available": true,
+        "seats": 4,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "480 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-28T01:28:29.698Z",
+      "status": "booked",
+      "paymentAmount": 40,
+      "paymentCurrency": "XLM"
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "HXtHMb-yUDX9YY-l",
+      "owner": "testuser",
+      "make": "TestBrand",
+      "model": "TestModel",
+      "pricePerHour": 15,
+      "currency": "XLM",
+      "createdAt": "2026-05-27T23:00:31.179Z"
+    },
+    {
+      "id": "rURnpzzxhB-Qzwga",
+      "owner": "e2e_12907",
+      "make": "TestE2E",
+      "model": "ModelX",
+      "pricePerHour": 20,
+      "currency": "XLM",
+      "createdAt": "2026-05-27T23:42:53.796Z"
     }
   ]
 }

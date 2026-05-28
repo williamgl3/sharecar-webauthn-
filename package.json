@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node start.js",
+    "start:dev": "npm run dev & cd server && node index.js"
   },
   "dependencies": {
     "@netlify/blobs": "^8.0.0",
