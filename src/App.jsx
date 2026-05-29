@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LogOut, Home, Plus, Search } from 'lucide-react';
+import { LogOut, Home, Plus, Search, Menu, X } from 'lucide-react';
 import { Calendar } from 'lucide-react';
 import BiometricAuthForm from './components/BiometricAuthForm';
 import PasswordAuthForm from './components/PasswordAuthForm';
@@ -14,6 +14,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [view, setView] = useState('dashboard');
   const [activeDialog, setActiveDialog] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('info');
   const [vehicles, setVehicles] = useState([]);
@@ -132,58 +133,63 @@ function App() {
 
             {currentUser ? (
               <div className="flex items-center gap-6">
+                {/* Desktop Nav */}
                 <div className="hidden sm:flex items-center gap-4">
-                  <button
-                    onClick={() => setView('dashboard')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      view === 'dashboard' ? 'bg-cyan-600' : 'hover:bg-gray-800'
-                    }`}
-                  >
+                  <button onClick={() => setView('dashboard')} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${view === 'dashboard' ? 'bg-cyan-600' : 'hover:bg-gray-800'}`}>
                     <Home size={18} /> Dashboard
                   </button>
-                  <button
-                    onClick={() => setView('search')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      view === 'search' ? 'bg-indigo-600' : 'hover:bg-gray-800'
-                    }`}
-                  >
+                  <button onClick={() => setView('search')} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${view === 'search' ? 'bg-indigo-600' : 'hover:bg-gray-800'}`}>
                     <Search size={18} /> Rentar
                   </button>
-                  <button
-                    onClick={() => setView('reservations')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      view === 'reservations' ? 'bg-amber-600' : 'hover:bg-gray-800'
-                    }`}
-                  >
+                  <button onClick={() => setView('reservations')} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${view === 'reservations' ? 'bg-amber-600' : 'hover:bg-gray-800'}`}>
                     <Calendar size={18} /> Mis Reservas
                   </button>
-                  <button
-                    onClick={() => setView('publish')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      view === 'publish' ? 'bg-purple-600' : 'hover:bg-gray-800'
-                    }`}
-                  >
+                  <button onClick={() => setView('publish')} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${view === 'publish' ? 'bg-purple-600' : 'hover:bg-gray-800'}`}>
                     <Plus size={18} /> Publicar
+                  </button>
+                  <div className="h-8 w-px bg-gray-700" />
+                  <div className="text-sm text-gray-300">
+                    <span className="font-semibold text-white hidden lg:inline">{currentUser.username}</span>
+                  </div>
+                  <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition">
+                    <LogOut size={18} />
                   </button>
                 </div>
 
-                <div className="h-8 w-px bg-gray-700" />
-
-                <div className="flex items-center gap-4">
-                  <div className="text-sm text-gray-300">
-                    <span className="font-semibold text-white">{currentUser.username}</span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
-                  >
+                {/* Mobile Hamburger */}
+                <div className="flex sm:hidden items-center gap-2">
+                  <button onClick={handleLogout} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition">
                     <LogOut size={18} />
+                  </button>
+                  <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 rounded-lg hover:bg-gray-800 transition">
+                    {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
                   </button>
                 </div>
               </div>
             ) : null}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {currentUser && mobileMenuOpen && (
+          <div className="sm:hidden border-t border-gray-800 bg-black/90 backdrop-blur-sm">
+            <div className="px-4 py-3 space-y-1">
+              <button onClick={() => { setView('dashboard'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition ${view === 'dashboard' ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                <Home size={18} /> Dashboard
+              </button>
+              <button onClick={() => { setView('search'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition ${view === 'search' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                <Search size={18} /> Rentar
+              </button>
+              <button onClick={() => { setView('reservations'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition ${view === 'reservations' ? 'bg-amber-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                <Calendar size={18} /> Mis Reservas
+              </button>
+              <button onClick={() => { setView('publish'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition ${view === 'publish' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                <Plus size={18} /> Publicar
+              </button>
+              <div className="pt-2 pb-1 text-xs text-gray-500 text-center">{currentUser.username}</div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Contenido Principal */}
@@ -273,7 +279,7 @@ function App() {
                   <p className="text-gray-300">Tu cuenta está protegida con autenticación biométrica y smart wallet</p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
                     <StellarWallet username={currentUser.username} />
                   </div>
