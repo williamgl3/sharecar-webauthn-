@@ -198,6 +198,11 @@
           "id": "dBNyoILYRTQURCfv2RCV8w",
           "publicKey": "pQECAyYgASFYIAEHvMzxWztmR698f6IuiIEy0-gRsLMSwCh3pXoLMZYqIlggD3AoTWWBaPPMv2GbZoqlxirVFRvYSCWEmegdCgBuD6o",
           "counter": 0
+        },
+        {
+          "id": "gXY1Hgh4GZJOGlF-Lpox_Q",
+          "publicKey": "pQECAyYgASFYIOkAv3rKRx03uIjD6i0SgMnl4mmFoG7sIZZ2IrF2bAU3Ilgga-37-7n046xeymfgu196XPAsLRQ8ypa0Z_eryU7SnvE",
+          "counter": 0
         }
       ]
     },
@@ -481,6 +486,72 @@
       "status": "booked",
       "paymentAmount": 20,
       "paymentCurrency": "XLM"
+    },
+    {
+      "id": "wI78pMKPPFBZ_vRK",
+      "vehicleId": "v002",
+      "vehicle": {
+        "id": "v002",
+        "brand": "Tesla",
+        "model": "Model Y Long Range",
+        "year": 2024,
+        "pricePerHour": 35,
+        "description": "SUV eléctrico de lujo con capacidad de 7 pasajeros y alcance de 500 km",
+        "features": [
+          "7 asientos",
+          "Panoramic roof",
+          "Carga superrápida",
+          "Modo independiente"
+        ],
+        "image": "https://picsum.photos/seed/tesla2/400/300",
+        "rating": 4.9,
+        "reviews": 245,
+        "location": "Centro Comercial North",
+        "available": true,
+        "seats": 7,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "500 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-29T18:21:07.409Z",
+      "status": "booked",
+      "paymentAmount": 0,
+      "paymentCurrency": "XLM",
+      "paymentProcessed": false
+    },
+    {
+      "id": "eryhFhVrIqqjnUY_",
+      "vehicleId": "v005",
+      "vehicle": {
+        "id": "v005",
+        "brand": "Audi",
+        "model": "e-tron GT",
+        "year": 2024,
+        "pricePerHour": 40,
+        "description": "Superdeportivo eléctrico ultra-lujoso con aceleración extrema y estilo futurista",
+        "features": [
+          "Carga 80% en 20 min",
+          "Asientos deportivos",
+          "Sonido Bang & Olufsen",
+          "Transmisión Porsche"
+        ],
+        "image": "https://picsum.photos/seed/audi/400/300",
+        "rating": 5,
+        "reviews": 78,
+        "location": "Zona Premium - Aeropuerto",
+        "available": true,
+        "seats": 4,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "480 km"
+      },
+      "userId": "w321",
+      "rentalDate": "2026-05-29T18:21:16.548Z",
+      "status": "booked",
+      "paymentAmount": 0,
+      "paymentCurrency": "XLM",
+      "paymentProcessed": false
     }
   ],
   "vehicles": [

@@ -1,55 +1,70 @@
+<!--
+  README profesional en español: resumen, instalación rápida, uso, despliegue,
+  variables de entorno, contribución y referencias.
+-->
+
 # ShareCar
-**Plataforma P2P de Alquiler de Vehículos con Autenticación Biométrica y Smart Wallet**
+Plataforma P2P de alquiler de vehículos con autenticación biométrica (WebAuthn)
+y Smart Wallet (integración Stellar).
 
-ShareCar es una aplicación moderna para alquiler de vehículos entre usuarios (P2P). Combina autenticación biométrica (WebAuthn / passkeys), integración con la red Stellar para pagos seguros y una interfaz responsiva construida con React + Vite + Tailwind CSS.
+Descripción breve: ShareCar es una aplicación demostrativa que combina passkeys
+para autenticación sin contraseñas, un monedero ligero sobre Stellar para
+operaciones de pago y una interfaz SPA moderna construida con React + Vite.
 
----
+Tabla de contenidos
+- [Características](#caracter%C3%ADsticas)
+- [Demo y capturas](#demo)
+- [Requisitos](#requisitos)
+- [Instalación rápida (desarrollo)](#instalaci%C3%B3n-r%C3%A1pida-desarrollo)
+- [Variables de entorno](#variables-de-entorno)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Arquitectura](#arquitectura)
+- [Despliegue (Netlify)](#despliegue-netlify)
+- [Seguridad y WebAuthn](#seguridad-y-webauthn)
+- [Contribuir](#contribuir)
+- [Licencia](#licencia)
 
-## Características principales
+## Características
+- Autenticación con Passkeys / WebAuthn (registro y verificación de claves)
+- Integración con Stellar para monedero y simulación de pagos
+- Catálogo de vehículos, publicación por usuarios y sistema de reservas
+- UI responsiva (móvil / tablet / escritorio)
+- Backend ligero en Node.js con endpoints para WebAuthn y lógica de negocio
 
-- Autenticación con Passkey (huella, Face ID o PIN)
-- Smart Wallet integrado (Stellar) para visualizar saldo y realizar pagos
-- Catálogo de vehículos, reservas y cancelaciones
-- Publicación de vehículos por usuarios
-- Interfaz responsiva para móvil, tablet y escritorio
-- Preparado para despliegue en Netlify (frontend) y funciones serverless
+## Demo
+- La aplicación está pensada para desplegarse en Netlify (frontend) y usar
+  funciones serverless para la API.
+- Para pruebas interdispositivo durante desarrollo, use un túnel HTTPS (`ngrok`).
 
----
+## Requisitos
+- Node.js 18+ (recomendado)
+- npm 9+ o yarn
+- Navegador moderno con soporte WebAuthn (Chrome, Edge, Safari, Firefox en variantes)
 
-## Tecnologías
-
-- Frontend: React 19, Vite, Tailwind CSS, lucide-react
-- Backend: Node.js, Express, `@simplewebauthn/server`
-- Blockchain: Stellar (helpers en `server/stellar.js`)
-- Dev / Deploy: Vite, Netlify (funciones en `netlify/functions`)
-
----
-
-## Instalación local (desarrollo)
-
-1. Clonar el repositorio
+## Instalación rápida (desarrollo)
+1. Clonar el repositorio y abrir la carpeta del proyecto:
 
 ```bash
 git clone <repo-url>
-cd webauthn-app
+cd webauthn-app/webauthn-app
 ```
 
-2. Instalar dependencias
+2. Instalar dependencias (raíz y servidor):
 
 ```bash
 npm install
-cd server
-npm install
-cd ..
+cd server && npm install && cd ..
 ```
 
-3. Ejecutar en desarrollo (dos terminales)
+3. Variables recomendadas: copie `.env.example` a `.env.local` y ajuste valores.
+
+4. Ejecutar en desarrollo (dos terminales):
 
 - Frontend:
 
 ```bash
 npm run dev
-# abre http://localhost:5174 (o el puerto que muestre Vite)
+# Vite muestra la URL (ej. http://localhost:5174)
 ```
 
 - Backend:
@@ -57,111 +72,78 @@ npm run dev
 ```bash
 cd server
 node index.js
-# escucha por defecto en http://localhost:4000
+# API por defecto: http://localhost:4000
 ```
 
-> Nota: el frontend usa rutas relativas `/api` por defecto si `VITE_API_URL` no está configurada. `vite.config.js` tiene un proxy que redirige `/api` → `http://localhost:4000` en desarrollo.
+Notas: el proxy de `vite.config.js` redirige `/api` a la API local para facilitar
+desarrollo sin configurar `VITE_API_URL`.
 
----
+## Variables de entorno
+Copie `.env.example` y rellene valores sensibles en su entorno (nunca los suba a VCS).
 
-## Variables de entorno recomendadas
+- `VITE_API_URL` — URL base del backend (ej. `/api` o `https://mi-dominio.com/api`)
+- `VITE_STELLAR_HORIZON_URL` — URL de Horizon (p. ej. `https://horizon-testnet.stellar.org`)
+- Claves privadas y secretos solo en entorno server / Netlify env vars.
 
-Crear un archivo `.env.local` o configurar variables en el entorno:
+Vea `.env.example` para una lista completa.
 
+## Estructura del proyecto
+
+```text
+webauthn-app/
+├─ netlify/                 # funciones serverless para Netlify
+├─ public/                  # recursos estáticos
+├─ server/                  # API y lógica del backend
+├─ src/                     # frontend React
+├─ package.json
+└─ vite.config.js
 ```
-VITE_API_URL=/api
-VITE_STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
-# Añadir aquí claves o endpoints adicionales según necesidad
-```
 
----
+## Arquitectura
+- Frontend (SPA): React + Vite. Interactúa con la API vía `fetch` a `/api`.
+- Backend: Node.js/Express que expone endpoints de WebAuthn (registro / inicio)
+  y endpoints para gestionar catálogo, reservas y el wallet.
+- Integración Stellar encapsulada en `server/stellar.js`.
 
-## Build y prueba (producción local)
+Para más detalles técnicos y diagramas, ver [ARCHITECTURE.md](ARCHITECTURE.md).
 
-```bash
-npm run build
-# servir dist/ con un servidor estático o usar `npm run preview`
-npm run preview
-```
+## Despliegue (Netlify)
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Functions directory: `netlify/functions`
+- Configure variables de entorno en Netlify (no ponga secretos en el frontend).
 
----
-
-## Despliegue en Netlify (frontend + functions)
-
-ShareCar incluye `netlify/functions/api.js` como wrapper. Para desplegar en Netlify:
-
-1. Instalar Netlify CLI (opcional)
+Ejemplo de despliegue con Netlify CLI:
 
 ```bash
 npm i -g netlify-cli
 netlify login
-```
-
-2. Configurar en Netlify (UI o CLI):
-- Build command: `npm run build`
-- Publish directory: `dist`
-- Functions directory: `netlify/functions`
-- Variables de entorno: `VITE_STELLAR_HORIZON_URL`, claves privadas necesarias (no exponerlas en frontend)
-
-3. Deploy de prueba:
-
-```bash
 netlify deploy --dir=dist --functions=netlify/functions
 ```
 
-Deploy a producción:
+## Seguridad y WebAuthn
+- WebAuthn requiere HTTPS y coincidencia de `origin`/`rpId` entre registro y uso.
+- Para pruebas locales con dispositivos móviles, exponga la aplicación con HTTPS
+  (ngrok o similar) y registre passkeys desde el mismo dominio.
+- Nunca almacene claves privadas en el frontend; la lógica sensible debe ejecutarse
+  en el backend o en funciones serverless.
 
-```bash
-netlify deploy --prod --dir=dist --functions=netlify/functions
-```
+Pautas y respuesta a vulnerabilidades en `SECURITY.md`.
 
----
+## Contribuir
+Lea `CONTRIBUTING.md` para flujos de trabajo, estilo de commits y cómo enviar PRs.
 
-## Notas para WebAuthn / Passkeys
+## Recursos útiles
+- Código del servidor: [server/index.js](server/index.js)
+- Helpers Stellar: [server/stellar.js](server/stellar.js)
 
-- WebAuthn requiere HTTPS y que el `origin` coincida entre registro y uso de la passkey.
-- Para probar desde el teléfono y usar el teléfono como autenticador, la app debe estar desplegada en un dominio HTTPS accesible desde el móvil. En `localhost` no se comparten credenciales entre dispositivos.
-- Opciones para pruebas interdispositivo:
-  - Exponer la app con `ngrok` o `localtunnel` y usar el dominio `https://...` resultante.
-  - Registrar y usar la passkey desde el mismo dispositivo.
-  - Verificar que `rpID` y `origin` coincidan con el dominio usado; el backend obtiene `rpID` desde el header `origin` por defecto.
-
-Errores comunes:
-- “No hay llave creada para localhost”: intentas autenticar desde un dispositivo distinto al que registró la passkey.
-- “The operation either timed out or was not allowed”: la llamada a `navigator.credentials.create/get` perdió la activación del usuario; la UI pre-carga opciones antes del click para mitigarlo.
+## Licencia
+Proyecto de ejemplo — agregue aquí su licencia (ej. MIT) si aplica.
 
 ---
 
-## Estructura del proyecto (resumen)
+Si quieres, puedo además:
+- Añadir `CONTRIBUTING.md` y `SECURITY.md` (ya los he creado).
+- Crear un `.env.example` con variables descritas arriba.
 
-```
-webauthn-app/
-├─ netlify/
-│  └─ functions/api.js
-├─ public/
-├─ server/
-│  ├─ index.js
-│  ├─ data-store.js
-│  └─ stellar.js
-├─ src/
-│  ├─ components/BiometricAuthForm.jsx
-│  ├─ components/VehicleCatalog.jsx
-│  └─ App.jsx
-├─ vite.config.js
-├─ package.json
-└─ netlify.toml
-```
-
----
-
-## Cómo usar (resumen rápido)
-
-1. Abrir la app (https en producción).
-2. Hacer click en “🔐 Usar Biometría”.
-3. Escribir el usuario; si no existe, crear cuenta y luego “Registrar Passkey”.
-4. Confirmar la autenticación biométrica en el dispositivo.
-5. Al verificarse, la app inicia sesión y muestra el panel con Smart Wallet y opciones de reservas.
-
----
-
-Si quieres que además cree el archivo `.env.example` y añada una nota en `netlify.toml`, dime y lo hago ahora.
+Dime si quieres que añada badges, un changelog o un documento con diagramas de arquitectura más detallados.
