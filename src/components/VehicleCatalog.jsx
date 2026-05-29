@@ -99,7 +99,7 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
 
       {/* Filters & Search */}
       <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
           {/* Search */}
           <input
             type="text"
@@ -347,7 +347,7 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
                 <img 
                   src={selectedVehicle.image}
                   alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
-                  className="w-full h-64 object-cover"
+                  className="w-full h-48 sm:h-64 object-cover"
                   onError={(e) => {
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23374151" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" fill="%239CA3AF"%3E🚗%3C/text%3E%3C/svg%3E';
                   }}
