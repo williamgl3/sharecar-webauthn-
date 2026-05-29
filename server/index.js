@@ -18,6 +18,7 @@ const {
   fundTestnetWallet,
   getWalletBalance,
   makePayment,
+  waitForAccount,
 } = require('./stellar.js');
 
 function createApp() {
@@ -290,7 +291,12 @@ function createApp() {
           stellarSecretKey: wallet.secretKey,
         };
         await saveUser(user);
-        try { await fundTestnetWallet(wallet.publicKey); } catch {}
+        try {
+          await fundTestnetWallet(wallet.publicKey);
+          await waitForAccount(wallet.publicKey);
+        } catch (e) {
+          console.log(`Wallet funding failed for ${req.params.username}: ${e.message}`);
+        }
       }
       const balances = user.stellarPublicKey ? await getWalletBalance(user.stellarPublicKey) : [];
       res.send({ ok: true, publicKey: user.stellarPublicKey || null, balances, platformPublicKey: getPlatformPublicKey() });
@@ -303,6 +309,7 @@ function createApp() {
     if (!user || !user.stellarPublicKey) return res.status(400).send({ error: 'wallet not found' });
     try {
       const result = await fundTestnetWallet(user.stellarPublicKey);
+      await waitForAccount(user.stellarPublicKey);
       res.send({ ok: true, result });
     } catch (e) {
       res.status(500).send({ error: e.message });
@@ -390,6 +397,7 @@ function createApp() {
     try {
       const { vehicleId, vehicle, userId, rentalDate } = req.body;
       if (!vehicleId || !userId) return res.status(400).send({ error: 'vehicleId and userId required' });
+      const price = (vehicle && vehicle.pricePerHour) || 0;
       let user = await getUser(userId);
       if (!user) {
         const wallet = await createUserWallet(userId);
@@ -402,11 +410,15 @@ function createApp() {
           stellarSecretKey: wallet.secretKey,
         };
         await saveUser(user);
-        try { await fundTestnetWallet(wallet.publicKey); } catch {}
+        try {
+          await fundTestnetWallet(wallet.publicKey);
+          await waitForAccount(wallet.publicKey);
+        } catch (e) {
+          console.log(`Wallet funding failed for ${userId}: ${e.message}`);
+        }
       }
       let paymentProcessed = false;
-      if (user.stellarSecretKey) {
-        const price = (vehicle && vehicle.pricePerHour) || 10;
+      if (user.stellarSecretKey && price > 0) {
         const platformKey = getPlatformPublicKey();
         if (platformKey) {
           try {
@@ -418,7 +430,6 @@ function createApp() {
           }
         }
       }
-      const price = (vehicle && vehicle.pricePerHour) || 0;
       const data = await readData();
       data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
       data.rentals.push({
@@ -431,7 +442,7 @@ function createApp() {
         paymentProcessed,
       });
       await writeData(data);
-      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM', paymentError: !paymentProcessed && price > 0 ? 'Pago no procesado: sin saldo en wallet' : null });
+      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM', paymentError: !paymentProcessed && price > 0 ? 'Pago no procesado: sin saldo en wallet. Usa Fondear Wallet en la página de Wallet.' : null });
     } catch (e) { res.status(500).send({ error: e.message }); }
   });
 

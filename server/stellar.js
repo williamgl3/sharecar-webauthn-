@@ -54,12 +54,34 @@ async function fundTestnetWallet(publicKey) {
   if (NETWORK_PASSPHRASE === StellarSdk.Networks.PUBLIC) {
     throw new Error('Cannot fund wallet on PUBLIC network');
   }
-  const response = await fetch(`https://friendbot.stellar.org?addr=${publicKey}`);
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Friendbot error: ${text}`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await fetch(`https://friendbot.stellar.org?addr=${publicKey}`);
+      if (response.ok) return response.json();
+      const text = await response.text();
+      if (attempt < 3) {
+        console.log(`Friendbot attempt ${attempt} failed, retrying...`, text.slice(0, 100));
+        await new Promise(r => setTimeout(r, 1500));
+      } else {
+        throw new Error(`Friendbot error: ${text}`);
+      }
+    } catch (e) {
+      if (attempt === 3) throw e;
+      console.log(`Friendbot attempt ${attempt} failed: ${e.message}, retrying...`);
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
-  return response.json();
+}
+
+async function waitForAccount(publicKey, maxRetries = 5) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await server.loadAccount(publicKey);
+    } catch {
+      if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+  return server.loadAccount(publicKey);
 }
 
 async function getWalletBalance(publicKey) {
@@ -99,4 +121,5 @@ module.exports = {
   fundTestnetWallet,
   getWalletBalance,
   makePayment,
+  waitForAccount,
 };
