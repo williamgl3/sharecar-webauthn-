@@ -319,17 +319,12 @@ function createApp() {
     res.send({ ok: true });
   });
 
-  function loadVehicleCatalog() {
-    try {
-      const catalogPath = path.join(__dirname, 'vehicles-catalog.json');
-      if (fs.existsSync(catalogPath)) return JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-    } catch (error) {
-      console.error('Error loading vehicle catalog:', error);
-    }
-    return [];
+  let vehicleCatalog = [];
+  try {
+    vehicleCatalog = require('./vehicles-catalog.json');
+  } catch (error) {
+    console.error('Error loading vehicle catalog:', error.message);
   }
-
-  const vehicleCatalog = loadVehicleCatalog();
 
   app.get('/vehicles', async (_req, res) => {
     const published = await getVehicles();
@@ -379,6 +374,7 @@ function createApp() {
     const { vehicleId, vehicle, userId, rentalDate } = req.body;
     if (!vehicleId || !userId) return res.status(400).send({ error: 'vehicleId and userId required' });
     const user = await getUser(userId);
+    let paymentProcessed = false;
     if (user && user.stellarSecretKey) {
       const price = (vehicle && vehicle.pricePerHour) || 10;
       const platformKey = getPlatformPublicKey();
@@ -386,12 +382,13 @@ function createApp() {
         try {
           const hash = await makePayment(user.stellarSecretKey, platformKey, price);
           console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
+          paymentProcessed = true;
         } catch (e) {
           return res.status(400).send({ error: `Payment failed: ${e.message}. Ensure your wallet has funds.` });
         }
       }
     }
-    const paymentAmount = (vehicle && vehicle.pricePerHour) || 0;
+    const price = (vehicle && vehicle.pricePerHour) || 0;
     const data = await readData();
     data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
     data.rentals.push({
@@ -399,11 +396,12 @@ function createApp() {
       vehicleId, vehicle, userId,
       rentalDate: rentalDate || new Date().toISOString(),
       status: 'booked',
-      paymentAmount,
+      paymentAmount: paymentProcessed ? price : 0,
       paymentCurrency: 'XLM',
+      paymentProcessed,
     });
     await writeData(data);
-    res.send({ ok: true, paymentAmount, paymentCurrency: 'XLM' });
+    res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM' });
   });
 
   app.get('/rentals/:username', async (req, res) => {
