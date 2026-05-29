@@ -33,12 +33,6 @@ Tabla de contenidos
 
 ---
 
-## ComuniChain (plantilla adaptada)
-
-Este proyecto se inspira en la plantilla `ComuniChain` de transparencia comunitaria.
-A continuación se incorpora, adaptada, la documentación que describe objetivos,
-arquitectura y procesos aplicables a `ShareCar`.
-
 ### Descripción del proyecto
 `ShareCar` facilita el alquiler P2P de vehículos, permitiendo a propietarios publicar
 vehículos y a usuarios reservarlos con trazabilidad y autenticación biométrica.
