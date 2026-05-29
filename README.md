@@ -31,6 +31,157 @@ Tabla de contenidos
 - UI responsiva (móvil / tablet / escritorio)
 - Backend ligero en Node.js con endpoints para WebAuthn y lógica de negocio
 
+---
+
+## ComuniChain (plantilla adaptada)
+
+Este proyecto se inspira en la plantilla `ComuniChain` de transparencia comunitaria.
+A continuación se incorpora, adaptada, la documentación que describe objetivos,
+arquitectura y procesos aplicables a `ShareCar`.
+
+### Descripción del proyecto
+`ShareCar` facilita el alquiler P2P de vehículos, permitiendo a propietarios publicar
+vehículos y a usuarios reservarlos con trazabilidad y autenticación biométrica.
+La integración con Stellar ofrece un wallet ligero para pagos y simulación de
+transacciones en testnet.
+
+### Propuesta de valor (actores)
+- Comunidad (Propietarios): publicar vehículos, gestionar disponibilidad y recibir pagos.
+- Usuario (Arrendatario): reservar vehículos, pagar con Smart Wallet y revisar historial.
+- Plataforma/Operador: conciliación de pagos, moderación de publicaciones y soporte.
+
+### Arquitectura (adaptada)
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    CLIENTE (Browser)                │
+│         React + Vite + Tailwind                      │
+│         Passkeys via @simplewebauthn/browser        │
+└──────────────────────┬──────────────────────────────┘
+                │ HTTPS / REST API
+┌──────────────────────▼──────────────────────────────┐
+│                 SERVIDOR (Node.js)                  │
+│                  Express.js API                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │  Auth Layer │  │  Vehículos  │  │  Reservas   │ │
+│  │  WebAuthn   │  │  Catálogo   │  │  Pagos/DB   │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘ │
+│  ┌─────────────────────────────────────────────┐    │
+│  │           server/data-store.js / DB         │    │
+│  │           server/stellar.js  (Stellar SDK)  │    │
+│  └─────────────────────────────────────────────┘    │
+└──────────┬──────────────────────┬───────────────────┘
+        │                      │
+┌──────────▼──────────┐  ┌────────▼─────────────────┐
+│     SQLite / MySQL  │  │    Stellar Testnet       │
+│  (persistencia)     │  │    (wallet & pagos)      │
+└─────────────────────┘  └──────────────────────────┘
+```
+
+### Flujo de autenticación (WebAuthn)
+
+```
+Usuario           Navegador              Servidor
+  │                  │                      │
+  │─── Username ────►│                      │
+  │                  │─── /auth/register/begin ─►│
+  │                  │◄── Challenge ────────│
+  │◄── Biometría ───►│                      │
+  │                  │─── Credential ──────►│
+  │                  │◄── Token JWT / Sesión ───│
+  │◄── Sesión ───────│                      │
+```
+
+### Endpoints principales (resumen)
+- `POST /auth/register/begin` — iniciar registro WebAuthn
+- `POST /auth/register/complete` — completar registro
+- `POST /auth/login/begin` — iniciar login
+- `POST /auth/login/complete` — completar login
+- `POST /api/vehicles` — publicar vehículo
+- `GET /api/vehicles` — listar vehículos
+- `POST /api/reservations` — crear reserva
+- `POST /api/payments` — iniciar pago (Stellar)
+
+### Tecnologías (resumen)
+- Frontend: React, Vite, Tailwind
+- Backend: Node.js, Express, @simplewebauthn/server
+- Blockchain: Stellar SDK (testnet)
+- DB: SQLite / MySQL según despliegue
+
+### Instalación local (adaptada)
+1. Clonar y entrar en la carpeta:
+
+```bash
+git clone <repo-url>
+cd webauthn-app/webauthn-app
+```
+
+2. Instalar dependencias:
+
+```bash
+npm install
+cd server && npm install && cd ..
+```
+
+3. Copiar variables de entorno:
+
+```bash
+cp .env.example .env.local
+# editar .env.local según entorno
+```
+
+4. Ejecutar en desarrollo:
+
+Frontend:
+```bash
+npm run dev
+```
+
+Backend:
+```bash
+cd server
+node index.js
+```
+
+### Variables de entorno (esenciales)
+- `VITE_API_URL` — URL base del backend
+- `VITE_STELLAR_HORIZON_URL` — endpoint Horizon
+- `SERVER_SECRET` — secreto para tokens en backend (no exponer)
+
+---
+
+### Licencia (adaptada)
+Este proyecto se distribuye bajo la licencia MIT.
+
+```text
+MIT License
+
+Copyright (c) 2026 ShareCar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+He adaptado y añadido la sección de `ComuniChain` al `README.md` de `ShareCar`.
+Ahora voy a commitear y subir estos cambios al remoto.
+
 ## Demo
 - La aplicación está pensada para desplegarse en Netlify (frontend) y usar
   funciones serverless para la API.
