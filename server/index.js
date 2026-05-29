@@ -78,6 +78,11 @@ function createApp() {
     return data.users.find((user) => user.username === username) || null;
   }
 
+  function ensureBalance(user) {
+    if (typeof user.simulatedBalance !== 'number') user.simulatedBalance = 10000;
+    return user;
+  }
+
   function createPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.scryptSync(password, salt, 64).toString('hex');
@@ -124,13 +129,9 @@ function createApp() {
       credentials: [],
       stellarPublicKey: wallet.publicKey,
       stellarSecretKey: wallet.secretKey,
+      simulatedBalance: 10000,
     };
     await saveUser(user);
-    try {
-      await fundTestnetWallet(wallet.publicKey);
-    } catch (e) {
-      console.log('Friendbot fund skipped (testnet may not be available):', e.message);
-    }
     res.send({
       ok: true,
       user: { id: user.id, username: user.username, stellarPublicKey: wallet.publicKey },
@@ -289,16 +290,13 @@ function createApp() {
           credentials: [],
           stellarPublicKey: wallet.publicKey,
           stellarSecretKey: wallet.secretKey,
+          simulatedBalance: 10000,
         };
         await saveUser(user);
-        try {
-          await fundTestnetWallet(wallet.publicKey);
-          await waitForAccount(wallet.publicKey);
-        } catch (e) {
-          console.log(`Wallet funding failed for ${req.params.username}: ${e.message}`);
-        }
       }
-      const balances = user.stellarPublicKey ? await getWalletBalance(user.stellarPublicKey) : [];
+      ensureBalance(user);
+      const xlmBalance = user.simulatedBalance.toFixed(7);
+      const balances = [{ asset_type: 'native', balance: xlmBalance }];
       res.send({ ok: true, publicKey: user.stellarPublicKey || null, balances, platformPublicKey: getPlatformPublicKey() });
     } catch (e) { res.status(500).send({ error: e.message }); }
   });
@@ -306,30 +304,23 @@ function createApp() {
   app.post('/wallet/fund', async (req, res) => {
     const { username } = req.body;
     const user = await getUser(username);
-    if (!user || !user.stellarPublicKey) return res.status(400).send({ error: 'wallet not found' });
-    try {
-      const result = await fundTestnetWallet(user.stellarPublicKey);
-      await waitForAccount(user.stellarPublicKey);
-      res.send({ ok: true, result });
-    } catch (e) {
-      res.status(500).send({ error: e.message });
-    }
+    if (!user) return res.status(400).send({ error: 'wallet not found' });
+    ensureBalance(user);
+    user.simulatedBalance += 10000;
+    await saveUser(user);
+    res.send({ ok: true, balance: user.simulatedBalance });
   });
 
   app.post('/wallet/pay', async (req, res) => {
     const { username, amount } = req.body;
     if (!username || !amount) return res.status(400).send({ error: 'username and amount required' });
     const user = await getUser(username);
-    if (!user || !user.stellarSecretKey) return res.status(400).send({ error: 'wallet not configured' });
-    const platformKey = getPlatformPublicKey();
-    if (!platformKey) return res.status(500).send({ error: 'platform wallet not initialized' });
-    try {
-      const hash = await makePayment(user.stellarSecretKey, platformKey, amount);
-      res.send({ ok: true, hash, amount });
-    } catch (e) {
-      console.error('Payment error:', e);
-      res.status(400).send({ error: e.message || 'Payment failed' });
-    }
+    if (!user) return res.status(400).send({ error: 'user not found' });
+    ensureBalance(user);
+    if (user.simulatedBalance < amount) return res.status(400).send({ error: 'Saldo insuficiente' });
+    user.simulatedBalance -= amount;
+    await saveUser(user);
+    res.send({ ok: true, amount, remainingBalance: user.simulatedBalance });
   });
 
   app.post('/users/photo', async (req, res) => {
@@ -408,27 +399,16 @@ function createApp() {
           credentials: [],
           stellarPublicKey: wallet.publicKey,
           stellarSecretKey: wallet.secretKey,
+          simulatedBalance: 10000,
         };
         await saveUser(user);
-        try {
-          await fundTestnetWallet(wallet.publicKey);
-          await waitForAccount(wallet.publicKey);
-        } catch (e) {
-          console.log(`Wallet funding failed for ${userId}: ${e.message}`);
-        }
       }
-      let paymentProcessed = false;
-      if (user.stellarSecretKey && price > 0) {
-        const platformKey = getPlatformPublicKey();
-        if (platformKey) {
-          try {
-            const hash = await makePayment(user.stellarSecretKey, platformKey, price);
-            console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
-            paymentProcessed = true;
-          } catch (e) {
-            console.log(`Payment failed for ${userId}: ${e.message} (rental still created)`);
-          }
-        }
+      ensureBalance(user);
+      let deducted = 0;
+      if (price > 0 && user.simulatedBalance >= price) {
+        user.simulatedBalance -= price;
+        deducted = price;
+        await saveUser(user);
       }
       const data = await readData();
       data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
@@ -437,12 +417,12 @@ function createApp() {
         vehicleId, vehicle, userId,
         rentalDate: rentalDate || new Date().toISOString(),
         status: 'booked',
-        paymentAmount: paymentProcessed ? price : 0,
+        paymentAmount: deducted,
         paymentCurrency: 'XLM',
-        paymentProcessed,
+        paymentProcessed: deducted > 0,
       });
       await writeData(data);
-      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM', paymentError: !paymentProcessed && price > 0 ? 'Pago no procesado: sin saldo en wallet. Usa Fondear Wallet en la página de Wallet.' : null });
+      res.send({ ok: true, paymentProcessed: deducted > 0, paymentAmount: deducted, paymentCurrency: 'XLM', remainingBalance: user.simulatedBalance });
     } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
@@ -466,8 +446,16 @@ function createApp() {
       if (rental.status === 'canceled') return res.status(400).send({ error: 'reservation already canceled' });
       rental.status = 'canceled';
       rental.canceledAt = new Date().toISOString();
+      if (rental.paymentAmount > 0) {
+        const user = await getUser(username);
+        if (user) {
+          ensureBalance(user);
+          user.simulatedBalance += rental.paymentAmount;
+          await saveUser(user);
+        }
+      }
       await writeData(data);
-      res.send({ ok: true, rental });
+      res.send({ ok: true, rental, refunded: rental.paymentAmount || 0 });
     } catch (e) { res.status(500).send({ error: e.message }); }
   });
 

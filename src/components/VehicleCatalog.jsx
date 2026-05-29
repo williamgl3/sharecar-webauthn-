@@ -69,7 +69,7 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
           vehicle: selectedVehicle,
           paymentProcessed: data.paymentProcessed,
           paymentAmount: data.paymentAmount,
-          paymentError: data.paymentError,
+          remainingBalance: data.remainingBalance,
         });
         setSelectedVehicle(null);
         onSelectVehicle?.(rentalData);
@@ -295,8 +295,12 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Pago</span>
                     <span className={`font-semibold ${rentalResult.paymentProcessed ? 'text-green-400' : 'text-yellow-400'}`}>
-                      {rentalResult.paymentProcessed ? `${rentalResult.paymentAmount} XLM descontados` : rentalResult.paymentError || 'Pago pendiente'}
+                      {rentalResult.paymentProcessed ? `${rentalResult.paymentAmount} XLM descontados` : 'Gratuito (sin costo)'}
                     </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Saldo restante</span>
+                    <span className="text-cyan-400 font-semibold">{Number(rentalResult.remainingBalance || 0).toFixed(2)} XLM</span>
                   </div>
                 </div>
                 <button
