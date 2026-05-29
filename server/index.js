@@ -277,15 +277,24 @@ function createApp() {
   });
 
   app.get('/wallet/:username', async (req, res) => {
-    const user = await getUser(req.params.username);
-    if (!user || !user.stellarPublicKey) return res.status(400).send({ error: 'wallet not found' });
-    const balances = await getWalletBalance(user.stellarPublicKey);
-    res.send({
-      ok: true,
-      publicKey: user.stellarPublicKey,
-      balances,
-      platformPublicKey: getPlatformPublicKey(),
-    });
+    try {
+      let user = await getUser(req.params.username);
+      if (!user) {
+        const wallet = await createUserWallet(req.params.username);
+        user = {
+          id: base64url.encode(crypto.randomBytes(16)),
+          username: req.params.username,
+          password: createPassword(Math.random().toString(36)),
+          credentials: [],
+          stellarPublicKey: wallet.publicKey,
+          stellarSecretKey: wallet.secretKey,
+        };
+        await saveUser(user);
+        try { await fundTestnetWallet(wallet.publicKey); } catch {}
+      }
+      const balances = user.stellarPublicKey ? await getWalletBalance(user.stellarPublicKey) : [];
+      res.send({ ok: true, publicKey: user.stellarPublicKey || null, balances, platformPublicKey: getPlatformPublicKey() });
+    } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
   app.post('/wallet/fund', async (req, res) => {
@@ -378,62 +387,77 @@ function createApp() {
   });
 
   app.post('/rentals', async (req, res) => {
-    const { vehicleId, vehicle, userId, rentalDate } = req.body;
-    if (!vehicleId || !userId) return res.status(400).send({ error: 'vehicleId and userId required' });
-    const user = await getUser(userId);
-    let paymentProcessed = false;
-    if (user && user.stellarSecretKey) {
-      const price = (vehicle && vehicle.pricePerHour) || 10;
-      const platformKey = getPlatformPublicKey();
-      if (platformKey) {
-        try {
-          const hash = await makePayment(user.stellarSecretKey, platformKey, price);
-          console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
-          paymentProcessed = true;
-        } catch (e) {
-          return res.status(400).send({ error: `Payment failed: ${e.message}. Ensure your wallet has funds.` });
+    try {
+      const { vehicleId, vehicle, userId, rentalDate } = req.body;
+      if (!vehicleId || !userId) return res.status(400).send({ error: 'vehicleId and userId required' });
+      let user = await getUser(userId);
+      if (!user) {
+        const wallet = await createUserWallet(userId);
+        user = {
+          id: base64url.encode(crypto.randomBytes(16)),
+          username: userId,
+          password: createPassword(Math.random().toString(36)),
+          credentials: [],
+          stellarPublicKey: wallet.publicKey,
+          stellarSecretKey: wallet.secretKey,
+        };
+        await saveUser(user);
+        try { await fundTestnetWallet(wallet.publicKey); } catch {}
+      }
+      let paymentProcessed = false;
+      if (user.stellarSecretKey) {
+        const price = (vehicle && vehicle.pricePerHour) || 10;
+        const platformKey = getPlatformPublicKey();
+        if (platformKey) {
+          try {
+            const hash = await makePayment(user.stellarSecretKey, platformKey, price);
+            console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
+            paymentProcessed = true;
+          } catch (e) {
+            return res.status(400).send({ error: `Payment failed: ${e.message}. Ensure your wallet has funds.` });
+          }
         }
       }
-    }
-    const price = (vehicle && vehicle.pricePerHour) || 0;
-    const data = await readData();
-    data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
-    data.rentals.push({
-      id: base64url.encode(crypto.randomBytes(12)),
-      vehicleId, vehicle, userId,
-      rentalDate: rentalDate || new Date().toISOString(),
-      status: 'booked',
-      paymentAmount: paymentProcessed ? price : 0,
-      paymentCurrency: 'XLM',
-      paymentProcessed,
-    });
-    await writeData(data);
-    res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM' });
+      const price = (vehicle && vehicle.pricePerHour) || 0;
+      const data = await readData();
+      data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
+      data.rentals.push({
+        id: base64url.encode(crypto.randomBytes(12)),
+        vehicleId, vehicle, userId,
+        rentalDate: rentalDate || new Date().toISOString(),
+        status: 'booked',
+        paymentAmount: paymentProcessed ? price : 0,
+        paymentCurrency: 'XLM',
+        paymentProcessed,
+      });
+      await writeData(data);
+      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM' });
+    } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
   app.get('/rentals/:username', async (req, res) => {
-    const data = await readData();
-    const rentals = Array.isArray(data.rentals) ? data.rentals : [];
-    res.send({ ok: true, rentals: rentals.filter((r) => r.userId === req.params.username) });
+    try {
+      const data = await readData();
+      const rentals = Array.isArray(data.rentals) ? data.rentals : [];
+      res.send({ ok: true, rentals: rentals.filter((r) => r.userId === req.params.username) });
+    } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
   app.post('/rentals/:id/cancel', async (req, res) => {
-    const { username } = req.body;
-    if (!username) return res.status(400).send({ error: 'username required' });
-
-    const data = await readData();
-    data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
-
-    const rental = data.rentals.find((item) => item.id === req.params.id);
-    if (!rental) return res.status(404).send({ error: 'reservation not found' });
-    if (rental.userId !== username) return res.status(403).send({ error: 'not authorized' });
-    if (rental.status === 'canceled') return res.status(400).send({ error: 'reservation already canceled' });
-
-    rental.status = 'canceled';
-    rental.canceledAt = new Date().toISOString();
-
-    await writeData(data);
-    res.send({ ok: true, rental });
+    try {
+      const { username } = req.body;
+      if (!username) return res.status(400).send({ error: 'username required' });
+      const data = await readData();
+      data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
+      const rental = data.rentals.find((item) => item.id === req.params.id);
+      if (!rental) return res.status(404).send({ error: 'reservation not found' });
+      if (rental.userId !== username) return res.status(403).send({ error: 'not authorized' });
+      if (rental.status === 'canceled') return res.status(400).send({ error: 'reservation already canceled' });
+      rental.status = 'canceled';
+      rental.canceledAt = new Date().toISOString();
+      await writeData(data);
+      res.send({ ok: true, rental });
+    } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
   if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
