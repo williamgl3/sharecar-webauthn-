@@ -63,7 +63,12 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
       const data = await response.json();
 
       if (response.ok && data.ok) {
-        const payMsg = data.paymentAmount ? `\nPago: ${data.paymentAmount} XLM descontados` : '';
+        let payMsg = '';
+        if (data.paymentProcessed) {
+          payMsg = `\nPago: ${data.paymentAmount} XLM descontados de tu wallet`;
+        } else if (data.paymentAmount > 0) {
+          payMsg = `\n⚠️ Monto: ${data.paymentAmount} XLM (pago no procesado, sin wallet configurada)`;
+        }
         alert(`✅ ¡Vehículo reservado!\n\nVehículo: ${selectedVehicle.brand} ${selectedVehicle.model}\nTarifa: $${selectedVehicle.pricePerHour}/hora${payMsg}`);
         setSelectedVehicle(null);
         onSelectVehicle?.(rentalData);
