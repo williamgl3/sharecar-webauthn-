@@ -22,6 +22,7 @@ const {
 
 function createApp() {
   const app = express();
+  initPlatformWallet().catch(() => {});
 
   const allowedOrigin = process.env.ORIGIN || 'http://localhost:5173';
   app.use(cors({ origin: (origin, cb) => cb(null, true) }));
