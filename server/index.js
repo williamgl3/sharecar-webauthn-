@@ -25,6 +25,12 @@ function createApp() {
   initPlatformWallet().catch(() => {});
 
   const allowedOrigin = process.env.ORIGIN || 'http://localhost:5173';
+  app.use((req, _res, next) => {
+    if (req.path.startsWith('/api/')) {
+      req.url = req.originalUrl = req.url.replace('/api', '');
+    }
+    next();
+  });
   app.use(cors({ origin: (origin, cb) => cb(null, true) }));
   app.use(express.json({ limit: '10mb' }));
 
