@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Star, MapPin, Zap, Users, Calendar, ChevronRight } from 'lucide-react';
+import { Star, MapPin, Zap, Users, Calendar, ChevronRight, CarFront, BadgeDollarSign, Gauge, Sparkles } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -147,29 +147,65 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
           filteredVehicles.map((vehicle) => (
             <div
               key={vehicle.id}
-              className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg overflow-hidden border border-gray-700 hover:border-cyan-500 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer transform hover:scale-105"
+              className="bg-gradient-to-br from-gray-800 to-gray-950 rounded-2xl overflow-hidden border border-gray-700 hover:border-cyan-500 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer transform hover:scale-[1.02]"
             >
-              {/* Image */}
-              <div className="bg-gradient-to-r from-gray-700 to-gray-800 h-48 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={vehicle.image} 
-                  alt={`${vehicle.brand} ${vehicle.model}`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23374151" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" fill="%239CA3AF"%3E🚗%3C/text%3E%3C/svg%3E';
-                  }}
-                />
+              <div className="relative overflow-hidden border-b border-gray-700 bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.18),_transparent_36%),linear-gradient(135deg,_rgba(15,23,42,1),_rgba(17,24,39,1))] p-5">
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-500/10 blur-2xl" />
+                <div className="absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-purple-500/10 blur-2xl" />
+                <div className="relative flex items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+                      <CarFront size={14} />
+                      Vehículo destacado
+                    </div>
+                    <h3 className="mt-3 text-2xl font-black text-white">{vehicle.brand}</h3>
+                    <p className="text-sm text-gray-300">{vehicle.model}</p>
+                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-300">
+                    <CarFront size={28} />
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-3 text-xs text-gray-300 sm:grid-cols-4">
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Gauge size={13} />
+                      <span>Velocidad</span>
+                    </div>
+                    <p className="mt-2 font-semibold text-white">{vehicle.transmission || 'Automático'}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Users size={13} />
+                      <span>Plazas</span>
+                    </div>
+                    <p className="mt-2 font-semibold text-white">{vehicle.seats} asientos</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Sparkles size={13} />
+                      <span>Autonomía</span>
+                    </div>
+                    <p className="mt-2 font-semibold text-white">{vehicle.range}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <BadgeDollarSign size={13} />
+                      <span>Tarifa</span>
+                    </div>
+                    <p className="mt-2 font-semibold text-white">${vehicle.pricePerHour}/h</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Content */}
               <div className="p-5">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="text-xl font-bold text-white">{vehicle.brand}</h3>
-                    <p className="text-gray-400 text-sm">{vehicle.model}</p>
+                    <p className="text-gray-400 text-sm uppercase tracking-[0.18em]">Descripción</p>
+                    <p className="text-gray-300 text-sm mt-1 line-clamp-2">{vehicle.description}</p>
                   </div>
-                  <span className="bg-purple-600 px-3 py-1 rounded text-white text-sm font-semibold">{vehicle.year}</span>
+                  <span className="bg-purple-600 px-3 py-1 rounded-full text-white text-sm font-semibold">{vehicle.year}</span>
                 </div>
 
                 {/* Rating & Reviews */}
@@ -180,9 +216,6 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
                   </div>
                   <span className="text-gray-500 text-sm">({vehicle.reviews} reseñas)</span>
                 </div>
-
-                {/* Description */}
-                <p className="text-gray-300 text-sm mb-3 line-clamp-2">{vehicle.description}</p>
 
                 {/* Features */}
                 <div className="grid grid-cols-2 gap-2 mb-4 text-xs">

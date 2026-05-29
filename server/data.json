@@ -188,7 +188,18 @@
         "salt": "f8d152900c7664009def0a45ecd337da",
         "hash": "2975516fa8466491e79b43c647aad118dcc43a01fee8a87378b387b49b7f932a710bb269746a6a61eb036bcfc8929c4e97871dced5fd251c82aff9adae31b815"
       },
-      "credentials": []
+      "credentials": [
+        {
+          "id": "tiu591qsp_5mv7vBPeINug",
+          "publicKey": "pQECAyYgASFYIObfaGKtJXtx7SmQYRW7TK3shPhvT8Z8DqL78zwG_Fr4Ilgg9Eu96EIGqExGB4WtA6DApxKOd8Ddvy4alraMn0x7rho",
+          "counter": 0
+        },
+        {
+          "id": "dBNyoILYRTQURCfv2RCV8w",
+          "publicKey": "pQECAyYgASFYIAEHvMzxWztmR698f6IuiIEy0-gRsLMSwCh3pXoLMZYqIlggD3AoTWWBaPPMv2GbZoqlxirVFRvYSCWEmegdCgBuD6o",
+          "counter": 0
+        }
+      ]
     },
     {
       "id": "FW5MDm8ejBZQFsLIVmmnKg",
@@ -218,6 +229,34 @@
       "credentials": [],
       "stellarPublicKey": "GBUWQFH3RGVFXNNF44FUNMPBORETNLFE4FIR3UKLLCS2UN47BBVNCO65",
       "stellarSecretKey": "SAKG6WYRBOUN424NXW53EM3DNPZAQ5VS3SDYRDPI44OUXVCHBCRMOOE3"
+    },
+    {
+      "id": "eyCWP9Yp62n4wLITDXvT8g",
+      "username": "h123",
+      "password": {
+        "salt": "29d6e5bd103f17e47b17b4803f15ef1d",
+        "hash": "9e7ff5ad473c13c6e58d2eb285a19863c328d61f19c66876fd4ed567615b98c99880a902c6ad0d80f7663ea3b443c86f1d22c70e4262a2c13e9711213c00df70"
+      },
+      "credentials": [
+        {
+          "id": "6RhRQht4x-CDnQGrfjUCNQ",
+          "publicKey": "pQECAyYgASFYIJVDdRMbdhsBoUnxB8cq2Zfebkdq4tygOhxxY_smG-QHIlggcYlcEK4wOzFuQbE-Xfop1aXxIzqgSkhcx5eIWVOOk7M",
+          "counter": 0
+        }
+      ],
+      "stellarPublicKey": "GBIZ6VTGEEYIDNI2JXRTW52ULHPQI2PCCDLKVN5EASRVNOKC63WNQ2FC",
+      "stellarSecretKey": "SA6NSUP4NBNFDW67YQFSXRDMBOG4TFGXJPDML2YCCKHWMBOTH4LDJ7DI"
+    },
+    {
+      "id": "EkXk5YjNCutsypzZKnfS9w",
+      "username": "realtestpass",
+      "password": {
+        "salt": "2a9acf421c28f443076a0b4c529e8863",
+        "hash": "e5bc506a008494fb09cf7b5be868241f143d60afc5d302c2bff4f9c4e20a8f25df33b53ca4235853c175181777c6ca52a67a154cef49087681c86fd0295ceb0f"
+      },
+      "credentials": [],
+      "stellarPublicKey": "GAEI7U5YGDJMGE6XNRMYPM4R2YTP7Z574ZGF26NYQYCH5YAFSJU5T77C",
+      "stellarSecretKey": "SABNQKAVFKRRD3OA36UB5O2EZ73BY6IR5XTPWYBAN4TYA6QI2OTFSR6S"
     }
   ],
   "rentals": [
@@ -414,6 +453,33 @@
       "rentalDate": "2026-05-28T01:28:29.698Z",
       "status": "booked",
       "paymentAmount": 40,
+      "paymentCurrency": "XLM"
+    },
+    {
+      "id": "leZg7cSOtBX1Syur",
+      "vehicleId": "rURnpzzxhB-Qzwga",
+      "vehicle": {
+        "id": "rURnpzzxhB-Qzwga",
+        "brand": "TestE2E",
+        "model": "ModelX",
+        "year": 2026,
+        "pricePerHour": 20,
+        "description": "Vehículo publicado por e2e_12907",
+        "features": [],
+        "image": "https://picsum.photos/seed/car-default/400/300",
+        "rating": 0,
+        "reviews": 0,
+        "location": "No especificada",
+        "available": true,
+        "seats": 4,
+        "transmission": "Automático",
+        "fuelType": "Eléctrico",
+        "range": "N/A"
+      },
+      "userId": "h123",
+      "rentalDate": "2026-05-28T14:49:47.023Z",
+      "status": "booked",
+      "paymentAmount": 20,
       "paymentCurrency": "XLM"
     }
   ],

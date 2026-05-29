@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import React from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function PublishForm({ owner, onPublished }) {
   const [make, setMake] = useState('');

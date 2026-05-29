@@ -159,8 +159,8 @@ function createApp() {
       userDisplayName: user.username,
       attestationType: 'none',
       authenticatorSelection: {
-        userVerification: 'required',
-        residentKey: 'required',
+        userVerification: 'preferred',
+        residentKey: 'preferred',
       },
       supportedAlgorithmIDs: [-7, -257],
       timeout: 60000,
@@ -203,27 +203,39 @@ function createApp() {
 
   app.get('/users/:username/credentials', async (req, res) => {
     const user = await getUser(req.params.username);
-    if (!user) return res.json({ hasCredentials: false });
-    res.json({ hasCredentials: Array.isArray(user.credentials) && user.credentials.length > 0 });
+    if (!user) return res.json({ exists: false, hasCredentials: false });
+    res.json({
+      exists: true,
+      hasCredentials: Array.isArray(user.credentials) && user.credentials.length > 0,
+    });
   });
 
   app.post('/auth/options', async (req, res) => {
-    const { username } = req.body;
-    if (!username) return res.status(400).send({ error: 'username required' });
-    const user = await getUser(username);
-    if (!user) return res.status(400).send({ error: 'user not found' });
-    if (!user.credentials || user.credentials.length === 0) {
-      return res.status(400).send({ error: 'no passkey registered' });
+    try {
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).send({ error: 'username required' });
+      }
+      const user = await getUser(username);
+      if (!user) {
+        return res.status(400).send({ error: 'user not found - debe crear usuario primero' });
+      }
+      if (!user.credentials || user.credentials.length === 0) {
+        return res.status(400).send({ error: 'no passkey registered - debe registrar biometría primero' });
+      }
+      const rpID = getRPID(req);
+      const options = generateAuthenticationOptions({
+        timeout: 60000,
+        allowCredentials: toCredentialList(user),
+        userVerification: 'preferred',
+        rpID,
+      });
+      challengeMap.set(username, options.challenge);
+      res.send(options);
+    } catch (error) {
+      console.error('Error in /auth/options:', error);
+      res.status(500).send({ error: error.message });
     }
-    const rpID = getRPID(req);
-    const options = generateAuthenticationOptions({
-      timeout: 60000,
-      allowCredentials: toCredentialList(user),
-      userVerification: 'required',
-      rpID,
-    });
-    challengeMap.set(username, options.challenge);
-    res.send(options);
   });
 
   app.post('/auth/verify', async (req, res) => {
@@ -398,6 +410,25 @@ function createApp() {
     const data = await readData();
     const rentals = Array.isArray(data.rentals) ? data.rentals : [];
     res.send({ ok: true, rentals: rentals.filter((r) => r.userId === req.params.username) });
+  });
+
+  app.post('/rentals/:id/cancel', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.status(400).send({ error: 'username required' });
+
+    const data = await readData();
+    data.rentals = Array.isArray(data.rentals) ? data.rentals : [];
+
+    const rental = data.rentals.find((item) => item.id === req.params.id);
+    if (!rental) return res.status(404).send({ error: 'reservation not found' });
+    if (rental.userId !== username) return res.status(403).send({ error: 'not authorized' });
+    if (rental.status === 'canceled') return res.status(400).send({ error: 'reservation already canceled' });
+
+    rental.status = 'canceled';
+    rental.canceledAt = new Date().toISOString();
+
+    await writeData(data);
+    res.send({ ok: true, rental });
   });
 
   if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wallet, Copy, ExternalLink, RefreshCw, AlertCircle, Loader } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function StellarWallet({ username }) {
   const [walletAddress, setWalletAddress] = useState('');

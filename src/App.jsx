@@ -8,7 +8,7 @@ import VehicleCatalog from './components/VehicleCatalog';
 import ReservationsList from './components/ReservationsList';
 import PublishForm from './PublishForm';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000');
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -72,8 +72,6 @@ function App() {
     setCurrentUser(userData);
     localStorage.setItem('currentUser', JSON.stringify(userData));
     setActiveDialog(null);
-    setMessage('✅ Sesión iniciada exitosamente');
-    setMessageType('success');
     setView('dashboard');
   };
 
@@ -352,14 +350,15 @@ function App() {
 
       {/* Dialogs Modales */}
       {activeDialog === 'biometric' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-8 shadow-2xl">
-            <h3 className="text-2xl font-bold mb-2">Autenticación Biométrica</h3>
-            <p className="text-gray-400 mb-6">Usa tu huella digital, cara o passkey para acceder</p>
-            <BiometricAuthForm
-              onSuccess={handleAuthSuccess}
-              onCancel={() => setActiveDialog(null)}
-            />
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4">
+          <div className="relative w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-0 shadow-[0_32px_120px_rgba(0,0,0,0.55)] animate-slide-up sm:animate-fade-in">
+            <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500" />
+            <div className="p-4 pt-7 pb-5 sm:p-5 sm:pt-8">
+              <BiometricAuthForm
+                onSuccess={handleAuthSuccess}
+                onCancel={() => setActiveDialog(null)}
+              />
+            </div>
           </div>
         </div>
       )}

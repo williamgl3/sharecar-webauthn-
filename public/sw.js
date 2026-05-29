@@ -37,6 +37,7 @@ self.addEventListener('activate', event => {
 // Fetch event - Network first, then cache
 self.addEventListener('fetch', event => {
   const { request } = event;
+  const requestUrl = new URL(request.url);
 
   // Skip non-GET requests
   if (request.method !== 'GET') {
@@ -44,7 +45,7 @@ self.addEventListener('fetch', event => {
   }
 
   // API requests: network first
-  if (request.url.includes('localhost:4000')) {
+  if (requestUrl.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then(response => {
@@ -113,13 +114,13 @@ self.addEventListener('sync', event => {
 self.addEventListener('periodicsync', event => {
   if (event.tag === 'update-vehicles') {
     event.waitUntil(
-      fetch('http://localhost:4000/vehicles-catalog')
+      fetch('/api/vehicles-catalog')
         .then(response => response.json())
         .then(data => {
           // Cachear datos actualizados
           return caches.open(CACHE_NAME).then(cache => {
             return cache.put(
-              'http://localhost:4000/vehicles-catalog',
+              '/api/vehicles-catalog',
               new Response(JSON.stringify(data))
             );
           });
