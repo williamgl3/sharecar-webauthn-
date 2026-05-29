@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, MapPin, Zap, Users, Calendar, ChevronRight, CarFront, BadgeDollarSign, Gauge, Sparkles } from 'lucide-react';
+import { Star, MapPin, Zap, Users, Calendar, ChevronRight, CarFront, BadgeDollarSign, Gauge, Sparkles, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -37,6 +37,7 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
   };
 
   const [renting, setRenting] = useState(false);
+  const [rentalResult, setRentalResult] = useState(null);
 
   const confirmRental = async () => {
     if (!currentUser) {
@@ -63,17 +64,22 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
       const data = await response.json();
 
       if (response.ok && data.ok) {
-        let payMsg = '';
-        if (data.paymentProcessed) {
-          payMsg = `\nPago: ${data.paymentAmount} XLM descontados de tu wallet`;
-        } else if (data.paymentAmount > 0) {
-          payMsg = `\n⚠️ Monto: ${data.paymentAmount} XLM (pago no procesado, sin wallet configurada)`;
-        }
-        alert(`✅ ¡Vehículo reservado!\n\nVehículo: ${selectedVehicle.brand} ${selectedVehicle.model}\nTarifa: $${selectedVehicle.pricePerHour}/hora${payMsg}`);
+        setRentalResult({
+          success: true,
+          vehicle: selectedVehicle,
+          paymentProcessed: data.paymentProcessed,
+          paymentAmount: data.paymentAmount,
+          paymentError: data.paymentError,
+        });
         setSelectedVehicle(null);
         onSelectVehicle?.(rentalData);
       } else {
-        alert(data.error || 'Error al reservar el vehículo');
+        setRentalResult({
+          success: false,
+          error: data.error || 'Error al reservar el vehículo',
+          vehicle: selectedVehicle,
+        });
+        setSelectedVehicle(null);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -264,6 +270,67 @@ export default function VehicleCatalog({ vehicles, onSelectVehicle, currentUser 
           </div>
         )}
       </div>
+
+      {/* Modal de Resultado */}
+      {rentalResult && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setRentalResult(null)}>
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg max-w-md w-full border border-gray-700 shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            {rentalResult.success ? (
+              <>
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-3">
+                    <CheckCircle size={32} className="text-green-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">¡Reserva Confirmada!</h2>
+                </div>
+                <div className="bg-gray-700/50 rounded-lg p-4 mb-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Vehículo</span>
+                    <span className="text-white font-semibold">{rentalResult.vehicle?.brand} {rentalResult.vehicle?.model}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Tarifa</span>
+                    <span className="text-cyan-400 font-semibold">${rentalResult.vehicle?.pricePerHour}/hora</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Pago</span>
+                    <span className={`font-semibold ${rentalResult.paymentProcessed ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {rentalResult.paymentProcessed ? `${rentalResult.paymentAmount} XLM descontados` : rentalResult.paymentError || 'Pago pendiente'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setRentalResult(null)}
+                  className="w-full py-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white font-semibold rounded-lg transition"
+                >
+                  Continuar
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-3">
+                    <XCircle size={32} className="text-red-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Error al Reservar</h2>
+                </div>
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-red-200 text-sm">{rentalResult.error}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setRentalResult(null)}
+                  className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition"
+                >
+                  Cerrar
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de Confirmación */}
       {selectedVehicle && (

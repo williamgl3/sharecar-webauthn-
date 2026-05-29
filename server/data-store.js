@@ -1,15 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const dataFile = path.join(__dirname, 'data.json');
+const dataFile = path.join(process.env.NETLIFY ? os.tmpdir() : __dirname, 'sharecar-data.json');
 
 let netlifyStore = null;
 
 async function getStore() {
   if (netlifyStore) return netlifyStore;
   if (process.env.NETLIFY) {
-    const { getStore } = await import('@netlify/blobs');
-    netlifyStore = getStore('webauthn-data');
+    try {
+      const { getStore } = await import('@netlify/blobs');
+      netlifyStore = getStore('webauthn-data');
+    } catch (e) {
+      console.error('Failed to init Netlify Blobs, using local file fallback:', e.message);
+      netlifyStore = null;
+    }
   }
   return netlifyStore;
 }

@@ -414,7 +414,7 @@ function createApp() {
             console.log(`Payment from ${userId}: ${price} XLM (tx: ${hash})`);
             paymentProcessed = true;
           } catch (e) {
-            return res.status(400).send({ error: `Payment failed: ${e.message}. Ensure your wallet has funds.` });
+            console.log(`Payment failed for ${userId}: ${e.message} (rental still created)`);
           }
         }
       }
@@ -431,7 +431,7 @@ function createApp() {
         paymentProcessed,
       });
       await writeData(data);
-      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM' });
+      res.send({ ok: true, paymentProcessed, paymentAmount: paymentProcessed ? price : 0, paymentCurrency: 'XLM', paymentError: !paymentProcessed && price > 0 ? 'Pago no procesado: sin saldo en wallet' : null });
     } catch (e) { res.status(500).send({ error: e.message }); }
   });
 
