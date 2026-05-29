@@ -33,11 +33,15 @@ async function readData() {
 }
 
 async function writeData(data) {
-  const store = await getStore();
-  if (store) {
-    await store.set('data', JSON.stringify(data));
-  } else {
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  try {
+    const store = await getStore();
+    if (store) {
+      await store.set('data', JSON.stringify(data));
+    } else {
+      fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+    }
+  } catch (e) {
+    console.error('writeData error:', e);
   }
 }
 
